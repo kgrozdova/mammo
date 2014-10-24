@@ -7,9 +7,12 @@
 
 #define OL_WIDTH 512 
 #define OL_EXT_LENGTH 4
-//#define OL_DRAW_HIST
-//#define OL_DRAW_THRESH
-
+//#define OL_DRAW
+#ifdef OL_DRAW
+	#define OL_DRAW_HIST
+	#define OL_DRAW_THRESH
+	#define OL_DRAW_DIST
+#endif
 //using namespace cv;
 using namespace std;
 
@@ -119,8 +122,44 @@ int main(int argc, char** argv){
 	// Use a less accurate but smoother looking distance transform. More research needed here.
 	cv::distanceTransform(mMammoThreshed, mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE);
 
+	cv::Mat mCorner;
+	cv::cornerHarris(mMammoThreshed, mCorner, 40, 3, 0.04);
+	float iMax = 0;
+	float iiMax = 0;
+	float ijMax = 0;
+	for(int i = 0; i < mCorner.cols; i++){
+		for(int j = 0; j < mCorner.rows; j++){
+			if (mCorner.at<float>(i,j) != 0){
+				//iMax = max(iMax,mCorner.at<float>(i,j));
+				if (iMax < mCorner.at<float>(i,j)){
+					iMax = mCorner.at<float>(i,j);
+					iiMax = i;
+					ijMax = j;
+				}
+			}
+		}
+	}
+	cv::Mat mCornerThresh;
+	int iCorners;
+	float iDivisor = 1;
+	do{
+		cv::threshold(mCorner,mCornerThresh,iMax/iDivisor,iCOLOUR_MAX,0);
+		cv::Mat mCornerT8U;
+		mCornerThresh.convertTo(mCornerT8U, CV_8U);
+		vector<vector<cv::Point>> pContours;
+		cv::findContours(mCornerT8U,pContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE);
+		iCorners = pContours.size();	
+		iDivisor+=0.05;
+	} while ((iCorners < 3) && (iDivisor < 10));
+
+	cv::imwrite(strFilename+"_corner.jpg", mCornerThresh);
+
 	// Write it to disk.
+
+#ifdef OL_DRAW_DIST
 	cv::imwrite(strFilename+"_dist.jpg", mMammoDist);
+#endif
+
 #ifdef OL_DRAW_THRESH
 	cv::imwrite(strFilename+"_thresh.jpg", mMammoThreshed);
 #endif
