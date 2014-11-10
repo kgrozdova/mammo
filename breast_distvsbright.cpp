@@ -8,13 +8,13 @@
 
 #define OL_WIDTH 512 
 #define OL_EXT_LENGTH 4
-//#define OL_DRAW
-//#define OL_DRAW_ALTERED
+#define OL_DRAW
 #ifdef OL_DRAW
-	#define OL_DRAW_HIST
+//	#define OL_DRAW_HIST
 	#define OL_DRAW_THRESH
 	#define OL_DRAW_DIST
-	#define OL_DRAW_CORNER
+//	#define OL_DRAW_DISTMAP
+//	#define OL_DRAW_CORNER
 #endif
 //using namespace cv;
 using namespace std;
@@ -53,6 +53,18 @@ int main(int argc, char** argv){
 			break;
 	}
 
+
+
+/*
+ *
+ *
+ *
+ *	SEPERATING THE BREAST FROM THE BACKGROUND
+ *
+ *
+ *
+ */
+	
 	// Separate the image into 3 channels.
 	vector<cv::Mat> bgr_planes;
 	cv::split(mMammo, bgr_planes);
@@ -114,19 +126,43 @@ int main(int argc, char** argv){
 		}
 	}
 
-	cv::Mat mMammoDist, mMammoThreshed;
+/*
+ *
+ *
+ *
+ *	    FINDING THE CONTOUR WHICH THE DESRIBES THE EDGE OF THE BREAST
+ *
+ *
+ *
+ */
+
+	cv::Mat mMammoThreshed;
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
 	cv::threshold(mMammo, mMammoThreshed, iCOLOUR_MAX*(iQuartMax/histSize), iCOLOUR_MAX, 1);
 
+	// MAGIC
 	cv::Mat	mMammoThreshedCopy = mMammoThreshed;
-	// Convert the threshold into greyscale to stop the distance transform complaining.
+
+	/*
+	 *
+	 *
+	 *
+	 *
+	 *	    DISTANCE TRANSFORM
+	 *		(need to do it here to stop it thinking edge of image is an edge)
+	 *
+	 *
+	 *
+	 */
+
+	// Convert the threshold into greyscale to stop the distance transform complaining. Consider moving this to the start of the programme.
 	cv::cvtColor(mMammoThreshed,mMammoThreshed, cv::COLOR_BGR2GRAY);
+	// Use a less accurate but smoother looking distance transform. More research needed here
+	cv::Mat mMammoDist;
+	cv::distanceTransform(mMammoThreshed, mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
 
-	// Use a less accurate but smoother looking distance transform. More research needed here.
-	cv::distanceTransform(mMammoThreshed, mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE);
-
-	cv::Mat mMammoThreshedCont;
+cv::Mat mMammoThreshedCont;
 	mMammoThreshed.convertTo(mMammoThreshedCont, CV_8U);
 	vector<vector<cv::Point>> pEdgeContours;
 	cv::findContours(mMammoThreshed,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
@@ -139,6 +175,18 @@ int main(int argc, char** argv){
 			pEdgeContour = i;
 		}
 	}
+
+/*
+ *
+ *
+ *
+ *
+ *	    FIGURE OUT WHETHER WE ARE LOOKING AT A LEFT OR RIGHT BREAST
+ *
+ *
+ *
+ *
+ */
 	vector<cv::Point> pEdgeContourCopy = pEdgeContour;
 	sort(pEdgeContour.begin(),pEdgeContour.end(),[](const cv::Point &l, const cv::Point &r){return l.x < r.x;});
 	sort(pEdgeContourCopy.begin(),pEdgeContourCopy.end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;});
@@ -162,6 +210,16 @@ int main(int argc, char** argv){
 		}
 	}
 	bool bLeft = iTotalGap < 0;	
+
+/*
+ *
+ *
+ *
+ *	    TRY TO FIND A CORNER NEAR THE BOTTOM OF THE BREAST
+ *		(needs improvement; struggles to find extremely concave corners)
+ *
+ *
+ */
 
 	// Make a probability map of likely corners in the mammogram.
 	cv::Mat mCorner;
@@ -231,10 +289,20 @@ int main(int argc, char** argv){
 		}
 	}
 	
+/*
+ *
+ *
+ *
+ *	PAINT OVER UNINTERESTING PARTS OF THE BREAST ON THE THRESHOLDED IMAGE
+ *
+ *
+ *
+ */
+
 	if (iContPosY < mMammo.rows){
 		int extremalX=pEdgeContourCopy[0].x;
 		int lastY=pEdgeContourCopy[0].y;
-		int lastX=pEdgeContourCopy[0].x;
+		//int lastX=pEdgeContourCopy[0].x;
 		vector<cv::Point> pEdgeThrowAway;
 		for(auto i:pEdgeContourCopy){
 			if(lastY == i.y){
@@ -251,56 +319,107 @@ int main(int argc, char** argv){
 			lastY = i.y;
 		}
 
-		// CURRENT PROBLEM:
-		//		YOU DON'T UNDERSTAND WHAT at<> DOES.
-		//		IT WORKS FOR LEFT, BUT NOT FOR RIGHT.
-		//		I SUSPECT at<> IS DRAWING MORE PIXELS THAN WE EXPECT.
+		cv::cvtColor(mMammoThreshedCopy, mMammoThreshedCopy, cv::COLOR_BGR2GRAY);
 		for(auto i:pEdgeThrowAway){
 			if(bLeft){
-				for(int x = 0; x <= i.x; x++){
-					mMammoThreshedCopy.at<int>(i.y, x) = 0;
+				for(int x = 0; x <= i.x+2; x++){
+					mMammoThreshedCopy.at<uchar>(cv::Point(x, i.y)) = 0;
 				}
 			} else {
-				for(int x = i.x; x < mMammoThreshed.cols; x++){
-					mMammoThreshedCopy.at<int>(i.y, x) = 0;
+				for(int x = i.x-2; x < mMammoThreshed.cols; x++){
+					mMammoThreshedCopy.at<uchar>(i.y, x) = 0;
 				}
 			}
 		}
 	}
 
-// Distance/brightness map
-vector<float> vecDistBright;
-cv::Mat_<uchar> mMammoDistChar = mMammoDist;
-vecDistBright.resize(256);
-for(int i = 0; i < vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}
+/*
+ *
+ *
+ *
+ *
+ *	    FINDING THE BREAST THICKNESS
+ *		(need to stop taking fatty part under breast into account)
+ *
+ *
+ *
+ */
+
+// Normalise the distance map to fit onto our graph.
+cv::normalize(mMammoDist, mMammoDist, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
+//mMammoDist.convertTo(mMammoDist,CV_8U);
+
+
+vector<float> vecDistBright; // Average brightness at distance from black. 
+vector<int> vecDistAv; // Number of pixels at distance from black. 
+cv::Mat_<int> mMammoDistChar = mMammoDist; 
+vecDistBright.resize(256); 
+vecDistAv.resize(256); 
+cv::Mat mMammoCopy; 
+cv::cvtColor(mMammo, mMammoCopy, cv::COLOR_BGR2GRAY); 
+for(int i = 0; i < vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);} 
+for(int i = 0; i < vecDistAv.size(); ++i){ vecDistAv[i] = 0;} 
+for(int i = 0; i < mMammo.cols; i++){ 
+	for(int j = 0; j < mMammo.rows; j++){ 
+		int iDist = int(mMammoDistChar(j,i));
+ 		vecDistBright[iDist]+=float(mMammoCopy.at<uchar>(j,i)); 
+ 		vecDistAv[iDist]++; 
+ 	} 
+} 
+for(int i = 0; i < vecDistBright.size(); ++i){ if(vecDistAv[i] != 0){vecDistBright[i]/= float(vecDistAv[i]);}}  
+
+vector<float> vecDistBrightBrightest; // Average brightness at distance from black.
+vector<int> vecDistAvBrightest; // Number of pixels at distance from black.
+vecDistBrightBrightest.resize(256);
+vecDistAvBrightest.resize(256);
+for(int i = 0; i < vecDistBrightBrightest.size(); ++i){ vecDistBrightBrightest[i] = uchar(0);}
+for(int i = 0; i < vecDistAvBrightest.size(); ++i){ vecDistAvBrightest[i] = 0;}
 for(int i = 0; i < mMammo.cols; i++){
 	for(int j = 0; j < mMammo.rows; j++){
-		//vecDistBright[int(255*float(mMammoDist.at<int>(j,i))/2147483647)]+=float(mMammo.at<uchar>(j,i));
-		vecDistBright[int(mMammoDistChar(j,i))]+=float(mMammo.at<uchar>(j,i));
+		int iDist = int(mMammoDistChar(j,i));
+		if(int(mMammoCopy.at<uchar>(j,i)) >= vecDistBright[iDist]){
+		vecDistBrightBrightest[iDist]+=float(mMammoCopy.at<uchar>(j,i));
+		vecDistAvBrightest[iDist]++;}
 	}
 }
+for(int i = 0; i < vecDistBrightBrightest.size(); ++i){ if(vecDistAvBrightest[i] != 0){vecDistBrightBrightest[i]/= float(vecDistAvBrightest[i]);}} 
 int dist_w = histSize*2; int dist_h = 512;
 cv::Mat distImage(dist_h, dist_w, CV_8UC3, cv::Scalar(0,0,0));
 
 // Normalize the result to [ 0, histImage.rows ].
-vecDistBright[255]=0;
-vecDistBright[0]=0;
-cv::normalize(vecDistBright, vecDistBright, 0, distImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
+vecDistBrightBrightest[255]=0;
+vecDistBrightBrightest[0]=0;
+cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, distImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
 
+/*
+ *
+ *
+ *
+ *
+ *	DRAWING THE PICTURES
+ *
+ *
+ *
+ *
+ */
+
+
+#ifdef OL_DRAW_DIST
 int bin_w = cvRound(double(dist_w/histSize));
 for(int i = 1; i < histSize; i++){
-	line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBright[i])) ,
-					cv::Point(bin_w*(i), dist_h - cvRound(vecDistBright[i])),
+	line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])) ,
+					cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
 					cv::Scalar(255, 255, 255), 2, 8, 0);
 }
 cv::imwrite(strFilename+"_dist.jpg", distImage );
+#endif
 
 #ifdef OL_DRAW_CORNER
 	cv::imwrite(strFilename+"_corner.jpg", mCornerThresh);
 #endif 
 	
-#ifdef OL_DRAW_DIST
-	cv::imwrite(strFilename+"_dist.jpg", mMammoDist);
+#ifdef OL_DRAW_DISTMAP
+	cv::imwrite(strFilename+"_distmap.jpg", mMammoDist);
 #endif
 
 #ifdef OL_DRAW_THRESH
