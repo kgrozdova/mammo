@@ -6,21 +6,19 @@
 
 using namespace std;
 
-double* scanner::linearfit(const double* x, const double* y){
-    size_t sizeArr = (sizeof(x)/sizeof(*x));
-    double* c0;
-    double* c1;
-    double* cov00;
-    double* cov01;
-    double* cov11;
-    double* sumsq;
-    gsl_fit_linear(x, 1, y, 1, sizeArr, c0, c1, cov00, cov01, cov11, sumsq);
-    double ret[2] = { *c1, *c0 };
+pair<double,double> scanner::linearfit(const double* x, const double* y, const int sizeArr){
+    size_t sizeArray = (size_t)sizeArr;
+    double c0, c1, cov00, cov01, cov11, sumsq;
+    gsl_fit_linear(x, 1, y, 1, sizeArray, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+    pair<double,double> ret;
+    ret.first = c1;
+    ret.second = c0;
     return ret;
 }
 
-double scanner::calcShift(double* coeff, double x0, double y){
-    double x = (y - coeff[1])/coeff[0];
+double scanner::calcShift(const pair<double,double> coeff, const double x0, const double y){
+    double x = (y - coeff.second)/coeff.first;
     double shift = x - x0;
     return shift;
 }
+
