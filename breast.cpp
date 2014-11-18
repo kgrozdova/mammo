@@ -341,22 +341,18 @@ double breast::fibrogland(mammography mammData, calibData calibration){
     int sizeArr = temp.dataArr.size();
     double x[sizeArr];
     double y[sizeArr];
-    pair<double,double> tempPair[sizeArr];
     size_t var = 0;
-    for(vector<pair<double, double>>::iterator it = temp.dataArr.begin(); it != temp.dataArr.end(); ++it){
-        tempPair[var] = make_pair(it->first,it->second);
+    for(auto it:temp.dataArr){
+        x[var] = it.first;
+        y[var] = it.second;
         var++;
-    }
-    for(int i = 0; i < sizeArr; i++){
-        x[i] = tempPair[i].first;
-        y[i] = tempPair[i].second;
     }
     pair<double,double> coeff1 = scanner::linearfit(x,y,var);
     temp = calibration["higher"];
-    tempPair[0] = temp.dataArr[0];
-    for(int i = 0; i < sizeArr; i++){
-        x[i] = tempPair[i].first;
-        y[i] = tempPair[i].second;
+    for(auto it:temp.dataArr){
+        x[var] = it.first;
+        y[var] = it.second;
+        var++;
     }
     pair<double,double> coeff2 = scanner::linearfit(x,y,var);
     double yStep;
