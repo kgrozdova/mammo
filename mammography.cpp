@@ -62,7 +62,12 @@ void mammography::loadPixelData(const string fileName){
       if (image->getStatus() == EIS_Normal){
         if (image->isMonochrome()){
           image->setMinMaxWindow();
+          Uint16* pixelArr;
           pixelArr = (Uint16*)(image->getOutputData(16 /* bits */));
+          long numByte = image->getOutputDataSize();
+          cout << numByte/2 << endl; // 2 bytes per pixel
+          for(int i  = 0; i < numByte/2; i++)
+            pixelVec.push_back(pixelArr[i]);
         }
       } else
         cerr << "Error: cannot load DICOM image (" << DicomImage::getString(image->getStatus()) << ")" << endl;
