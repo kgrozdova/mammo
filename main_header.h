@@ -25,7 +25,7 @@ class mammography: public various{
     public:
         long XRayTubeCurrent, Exposure, Rows, Columns, BitsAllocated, PixelRepresentation, SmallestImagePixelValue, LargestImagePixelValue;
         OFString KVP, BodyPartThickness, CompressionForce, Filter, Target;
-        Uint16* pixelArr;
+        vector<Uint16> pixelVec;
     public:
         mammography(){
             cout << "mammography constructor is called" << endl;

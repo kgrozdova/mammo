@@ -373,15 +373,15 @@ double breast::fibrogland(mammography mammData, calibData calibration){
     double tgTemp;
     ofstream myfile;
     myfile.open ("example2.txt");
-    for(int i = 0; i < arr_size; i++){
-        if((int)mammData.pixelArr[i] == 0){
+    for(auto pixel:mammData.pixelVec){
+        if(int(pixel) == 0){
             tgTemp = -coeff3.second/coeff3.first;
         } else{
-            tgTemp = (log((double)mammData.pixelArr[i]/atoi(Exposure.c_str()))-coeff3.second)/coeff3.first;
+            tgTemp = (log(double(pixel)/atoi(Exposure.c_str()))-coeff3.second)/coeff3.first;
         }
         if(tgTemp >= 0){
             tg += tgTemp;
-            myfile << (int)mammData.pixelArr[i] << " " << tgTemp << "\n";
+            myfile << int(pixel)<< " " << tgTemp << "\n";
         }
     }
     myfile.close();

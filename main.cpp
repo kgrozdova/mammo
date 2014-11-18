@@ -4,18 +4,16 @@
 #include <vector>
 typedef map< string, phantomCalibration> calibData;
 
-int main(){
-
+int main(int argc, char** argv){
+    if(argc != 2){
+        cerr << "No DICOM found" << endl;
+        return -1;
+    }
+    string strFileName = argv[1];
     mammography mammData;
-    mammData.mammography::loadHeaderData("Control_prior_anon-00001-LMLO111105-20110328-RAW.dcm");
+    mammData.mammography::loadHeaderData(strFileName);
     // load data from processed DICOM file
-    mammData.mammography::loadPixelData("Control_prior_anon-00001-LMLO111105-20110328-RAW.dcm");
-//    // convert dicom to jpeg
-//    char* DICOMfile = "Control_prior_anon-00001-LMLO111105-20110328-RAW.dcm";
-//    char* JPEGfile = "Control_prior_anon-00001-LMLO111105-20110328-RAW.jpeg";
-//    char command[50];
-//    sprintf(command, "dcmj2pnm %s %s +oj", DICOMfile, JPEGfile);
-//    system(command);
+    mammData.mammography::loadPixelData(strFileName);
 
     //                  //
     // Image processing //
@@ -31,13 +29,23 @@ int main(){
     //	#define OL_DRAW_CORNER
     #endif
     //cv::Mat mMammo = breast::getMat(JPEGfile);
-    cv::Mat mMammo((int)mammData.Rows, (int)mammData.Columns, CV_16UC1, 0);
-    for(int i = 0; i < mammData.Rows; i++){
-        for(int j = 0; j < mammData.Columns; j++){
-             //mMammo.at<int>(i,j)= mammData.pixelArr[i+(int)mammData.Columns*j];
+    cv::Mat mMammo((int)mammData.Rows, (int)mammData.Columns, CV_16UC1, cv::Scalar(1));
+    cout << "aaaa" << endl;
+    cout << (int)mammData.Rows << " " << (int)mammData.Columns << endl;
+    for(int i = 0; i < mammData.Columns; i++){
+        for(int j = 0; j < mammData.Rows; j++){
+       // if(mammData.pixelVec[i+(int)mammData.Columns*j] != 0)
+            mMammo.at<Uint16>(j,i) = mammData.pixelVec[i+(int)mammData.Columns*j];
         }
     }
-    string strFileName = breast::fileNameErase("Control_prior_anon-00001-LMLO111105-20110328-PROCESSED.dcm");
+    //
+   // cv::normalize(mMammo,mMammo, 0, 255);
+    cout << "bbbbb" << endl;
+    //cout << mMammo;
+    cv::imwrite("test.png", mMammo);
+
+    cout << "aaaa" << endl;
+    strFileName = breast::fileNameErase(strFileName);
 
     int iCOLOUR_MAX = breast::getBitDepth(mMammo);
 
