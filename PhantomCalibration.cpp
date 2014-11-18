@@ -45,17 +45,13 @@ void phantomCalibration::applyShift(const double shift){
 void phantomCalibration::dataCorrection(const double x0, const double y0, const int kV, const string filTar, const int t){
     phantomCalibration calibrationData;
     calibrationData = phantomCalibration::getThicknessData(filTar, kV, t);
-    pair<double, double> temp[calibrationData.dataArr.size()];
     size_t var = 0;
-    for(vector<pair<double, double>>::iterator it = calibrationData.dataArr.begin(); it != calibrationData.dataArr.end(); ++it){
-        temp[var] = make_pair(it->first,it->second);
-        var++;
-    }
     double x[calibrationData.dataArr.size()];
     double y[calibrationData.dataArr.size()];
-    for(int i = 0; i < (int)calibrationData.dataArr.size(); i++){
-        x[i] = temp[i].first;
-        y[i] = temp[i].second;
+    for(auto it:calibrationData.dataArr){
+        x[var] = it.first;
+        y[var] = it.second;
+        var++;
     }
     pair<double,double> ret = scanner::linearfit(x,y,(sizeof(x)/sizeof(*x)));
     double shift = scanner::calcShift(ret, x0, y0);
