@@ -17,46 +17,35 @@
 
 typedef map< string, phantomCalibration> calibData;
 
-cv::Mat breast::getMat(const string fileName){
-	cv::Mat mMammo = cv::imread(fileName, 1);
-	if(!mMammo.data){
-		cerr << "cv::Mat object was not created." << endl;
-	}
-	return mMammo;
-}
 
-string breast::fileNameErase(string fileName){
-    return fileName.erase(fileName.length()-OL_EXT_LENGTH, fileName.length()); // Remove file extension.
-}
-
-int breast::getBitDepth(cv::Mat mMammo){
+int breast::getBitDepth(){
 	// Find bit depth of image and store white value.
-	int iCOLOUR_MAX;
 	switch(mMammo.depth()){
 		case CV_8U:
-			iCOLOUR_MAX = 255;
+			this->iColourMAX = 255;
 			break;
 		case CV_8S:
-			iCOLOUR_MAX = 127;
+			this->iColourMAX = 127;
 			break;
 		case CV_16U:
-			iCOLOUR_MAX = 65535;
+			this->iColourMAX = 65535;
 			break;
 		case CV_16S:
-			iCOLOUR_MAX = 32767;
+			this->iColourMAX = 32767;
 			break;
 		case CV_32S:
-			iCOLOUR_MAX = 2147483647;
+			this->iColourMAX = 2147483647;
 			break;
 		case CV_32F:
 		case CV_64F:
 			exit(1); // Can't cope with that many colours.
 			break;
 	}
-	return iCOLOUR_MAX;
+
+	return this->iColourMAX;
 }
 
-vector<cv::Mat> breast::separate3channels(cv::Mat mMammo){
+vector<cv::Mat> breast::separate3channels(){
 	// Separate the image into 3 channels.
 	vector<cv::Mat> bgr_planes;
 	cv::split(mMammo, bgr_planes);
@@ -87,7 +76,7 @@ void breast::drawHist(const int histSize){
     #endif
 }
 
-pair<float, float> breast::findPeak(const cv::Mat mHistB, const int histSize){
+pair<float, float> breast::findPeak(const int histSize){
     float iNMax = 0;
 	float iBinMax = 0;
 	for(int i = histSize - 1; i > histSize*0.5; i--){
@@ -99,7 +88,7 @@ pair<float, float> breast::findPeak(const cv::Mat mHistB, const int histSize){
 	return make_pair(iNMax, iBinMax);
 }
 
-float breast::findWidth(const int iBinMax, const int iNMax, const cv::Mat mHistB){
+float breast::findWidth(const int iBinMax, const int iNMax){
 	// Find the width at the value with PEAK_VALUE/OL_WIDTH.
 	float iQuartMax = 0;
 	for(int i = iBinMax; i > 0; i--){
@@ -111,7 +100,7 @@ float breast::findWidth(const int iBinMax, const int iNMax, const cv::Mat mHistB
     return iQuartMax;
 }
 
-vector<cv::Point> breast::distanceTransform(const cv::Mat mMammoThreshed){
+vector<cv::Point> breast::distanceTransform(){
     vector<vector<cv::Point>> pEdgeContours;
 	cv::findContours(mMammoThreshed,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
 	int iContSize = 0;
@@ -125,7 +114,7 @@ vector<cv::Point> breast::distanceTransform(const cv::Mat mMammoThreshed){
 	return pEdgeContour;
 }
 
-bool breast::leftOrRight(vector<cv::Point> pEdgeContour, const cv::Mat mMammo){
+bool breast::leftOrRight(vector<cv::Point> pEdgeContour){
     vector<cv::Point> pEdgeContourCopy = pEdgeContour;
 	sort(pEdgeContour.begin(),pEdgeContour.end(),[](const cv::Point &l, const cv::Point &r){return l.x < r.x;});
 	sort(pEdgeContourCopy.begin(),pEdgeContourCopy.end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;});
@@ -152,7 +141,7 @@ bool breast::leftOrRight(vector<cv::Point> pEdgeContour, const cv::Mat mMammo){
 	return bLeft;
 }
 
-float breast::findIMax(const cv::Mat mCorner){
+float breast::findIMax(){
 	float iMax = 0;
 	float iiMax = 0;
 	float ijMax = 0;
@@ -171,9 +160,7 @@ float breast::findIMax(const cv::Mat mCorner){
 	return iMax;
 }
 
-vector<vector<cv::Point>> breast::findCorners(float iDivisor, const cv::Mat mCorner,
-                                                const int iMax, const int iCOLOUR_MAX){
-	vector<vector<cv::Point>> pContours;
+vector<vector<cv::Point>> breast::findCorners(float iDivisor, const int iMax, const int iCOLOUR_MAX){
 	cv::Mat mCornerThresh;
 	int iCorners;
 	do{
@@ -188,8 +175,7 @@ vector<vector<cv::Point>> breast::findCorners(float iDivisor, const cv::Mat mCor
         return pContours;
 }
 
-vector<cv::Point> breast::findCornerCentre(vector<vector<cv::Point>> pContours){
-    vector<cv::Point> vecContCents;
+vector<cv::Point> breast::findCornerCentre(){
 	for(auto i:pContours){
 		cv::Moments momCont = cv::moments(i);
 		vecContCents.push_back(cv::Point(momCont.m10/momCont.m00,momCont.m01/momCont.m00));
@@ -197,7 +183,7 @@ vector<cv::Point> breast::findCornerCentre(vector<vector<cv::Point>> pContours){
 	return vecContCents;
 }
 
-pair<int, int> breast::pickCornerCutOff(const cv::Mat mMammo, const vector<vector<cv::Point>> pContours, vector<cv::Point> vecContCents, const bool bLeft){
+pair<int, int> breast::pickCornerCutOff(const bool bLeft){
 	int iContPosY = mMammo.rows;
 	int iContPosX;
 	for(int i = 0; i < (int)pContours.size(); i++){
@@ -218,8 +204,7 @@ pair<int, int> breast::pickCornerCutOff(const cv::Mat mMammo, const vector<vecto
 	return make_pair(iContPosX, iContPosY);
 }
 
-void breast::deleteUnneeded(const cv::Mat mMammo, const vector<cv::Point> pEdgeContourCopy, const bool bLeft, cv::Mat mMammoThreshed,
-                    cv::Mat mMammoThreshedCopy, const int iContPosY){
+void breast::deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const vector<cv::Point> pEdgeContourCopy, const int iContPosY){
     if (iContPosY < mMammo.rows){
             int extremalX=pEdgeContourCopy[0].x;
             int lastY=pEdgeContourCopy[0].y;
@@ -255,8 +240,7 @@ void breast::deleteUnneeded(const cv::Mat mMammo, const vector<cv::Point> pEdgeC
     }
 }
 
-vector<float> breast::getDistBright(const cv::Mat_<int> mMammoDist, const cv::Mat mMammo){
-    vector<float> vecDistBright; // Average brightness at distance from black.
+vector<float> breast::getDistBright(){
     vector<int> vecDistAv; // Number of pixels at distance from black.
     cv::Mat_<int> mMammoDistChar = mMammoDist;
     vecDistBright.resize(256);
@@ -276,9 +260,7 @@ vector<float> breast::getDistBright(const cv::Mat_<int> mMammoDist, const cv::Ma
     return vecDistBright;
 }
 
-vector<float> breast::brestThickness(const cv::Mat mMammo, const cv::Mat_<int> mMammoDist, const vector<float> vecDistBright,
-                                        const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){
-    vector<float> vecDistBrightBrightest; // Average brightness at distance from black.
+vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){
     vector<int> vecDistAvBrightest; // Number of pixels at distance from black.
     vecDistBrightBrightest.resize(256);
     vecDistAvBrightest.resize(256);
@@ -303,8 +285,7 @@ vector<float> breast::normalBreastThickness(vector<float> vecDistBrightBrightest
     return vecDistBrightBrightest;
 }
 
-void breast::drawImages(const vector<float> vecDistBrightBrightest, string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh,
-                const cv::Mat mMammoDist, const cv::Mat mMammoThreshedCopy, const cv::Mat mMammo, const int histSize){
+void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
     fileName.pop_back();
     int dist_w = histSize*2;
     int dist_h = 512;

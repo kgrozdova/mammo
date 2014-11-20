@@ -13,3 +13,8 @@ void various::iterateVectorToFile(vector<pair<double, double>> vectorInput, stri
     myfile.close();
 }
 
+string various::fileNameErase(string fileName){
+    #define OL_EXT_LENGTH 4
+    return fileName.erase(fileName.length()-OL_EXT_LENGTH, fileName.length()); // Remove file extension.
+}
+

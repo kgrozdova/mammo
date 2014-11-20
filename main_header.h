@@ -19,6 +19,7 @@ class various{
     public:
         template <typename T> static string ToString(T input);
         static void iterateVectorToFile(vector<pair<double, double>> vectorInput, string fileName);
+        static string fileNameErase(string fileName);
 };
 
 class mammography: public various{
@@ -78,30 +79,45 @@ class scanner: public phantomCalibration, dailyCalibration{
 
 class breast: public mammography, phantomCalibration{
     public:
+        cv::Mat mMammo;
+        cv::Mat mHistB;
+        cv::Mat mMammoThreshed;
+        cv::Mat mMammoDist;
+        cv::Mat mCorner;
+    private:
         double breastVol, fibroVol;
+        int iColourMAX;
+        vector<cv::Mat> bgr_planes;
+        vector<cv::Point> pEdgeContour;
+        vector<vector<cv::Point>> pContours;
+        vector<cv::Point> vecContCents;
+        vector<float> vecDistBright;
+        vector<float> vecDistBrightBrightest;
     public:
-        static cv::Mat getMat(const string fileName);
-        static string fileNameErase(string fileName);
-        static int getBitDepth(cv::Mat mMammo);
-        static vector<cv::Mat> separate3channels(cv::Mat mMammo);
+        breast(mammography mammData){
+            mMammo = cv::Mat((int)mammData.Rows, (int)mammData.Columns, CV_16UC1, cv::Scalar(1));
+            for(int i = 0; i < mammData.Columns; i++){
+                for(int j = 0; j < mammData.Rows; j++){
+                    mMammo.at<Uint16>(j,i) = mammData.pixelVec[i+(int)mammData.Columns*j];
+                }
+            }
+        };
+        int getBitDepth();
+        vector<cv::Mat> separate3channels();
         static void drawHist(const int histSize);
-        static pair<float, float> findPeak(const cv::Mat mHistB, const int histSize);
-        static float findWidth(const int iBinMax, const int iNMax, const cv::Mat mHistB);
-        static vector<cv::Point> distanceTransform(const cv::Mat mMammoThreshed);
-        static bool leftOrRight(vector<cv::Point> pEdgeContour, const cv::Mat mMammo);
-        static float findIMax(const cv::Mat mCorner);
-        static vector<vector<cv::Point>> findCorners(float iDivisor, const cv::Mat mCorner, const int iMax, const int iCOLOUR_MAX);
-        static vector<cv::Point> findCornerCentre(vector<vector<cv::Point>> pContours);
-        static pair<int, int> pickCornerCutOff(const cv::Mat mMammo, const vector<vector<cv::Point>> pContours,
-                                        vector<cv::Point> vecContCents, const bool bLeft);
-        static void deleteUnneeded(const cv::Mat mMammo, const vector<cv::Point> pEdgeContourCopy, const bool bLeft, cv::Mat mMammoThreshed,
-                            cv::Mat mMammoThreshedCopy, const int iContPosY);
-        static vector<float> getDistBright(const cv::Mat_<int> mMammoDist, cv::Mat mMammo);
-        static vector<float> brestThickness(const cv::Mat mMammo, const cv::Mat_<int> mMammoDist, const vector<float> vecDistBright,
-                                        const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy);
+        pair<float, float> findPeak(const int histSize);
+        float findWidth(const int iBinMax, const int iNMax);
+        vector<cv::Point> distanceTransform();
+        bool leftOrRight(vector<cv::Point> pEdgeContour);
+        float findIMax();
+        vector<vector<cv::Point>> findCorners(float iDivisor, const int iMax, const int iCOLOUR_MAX);
+        vector<cv::Point> findCornerCentre();
+        pair<int, int> pickCornerCutOff(const bool bLeft);
+        void deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const vector<cv::Point> pEdgeContourCopy, const int iContPosY);
+        vector<float> getDistBright();
+        vector<float> brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy);
         static vector<float> normalBreastThickness(vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
-        static void drawImages(const vector<float> vecDistBrightBrightest, const string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh,
-                        const cv::Mat mMammoDist, const cv::Mat mMammoThreshedCopy, const cv::Mat mMammo, const int histSize);
+        void drawImages(string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize);
 
         static double fibrogland(mammography mammData, calibData calibration);
         static double totalBreast(mammography mammData);
