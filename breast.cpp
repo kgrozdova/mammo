@@ -11,8 +11,8 @@
 //	#define OL_DRAW_HIST
 #define OL_DRAW_THRESH
 #define OL_DRAW_DIST
-//	#define OL_DRAW_DISTMAP
-//	#define OL_DRAW_CORNER
+	#define OL_DRAW_DISTMAP
+	/* #define OL_DRAW_CORNER */
 #endif
 
 typedef map< string, phantomCalibration> calibData;
@@ -225,7 +225,7 @@ void breast::deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const 
                 lastY = i.y;
             }
 
-            cv::cvtColor(mMammoThreshedCopy, mMammoThreshedCopy, cv::COLOR_BGR2GRAY);
+            /* cv::cvtColor(mMammoThreshedCopy, mMammoThreshedCopy, cv::COLOR_BGR2GRAY); */
             for(auto i:pEdgeThrowAway){
                 if(bLeft){
                     for(int x = 0; x <= i.x+2; x++){
@@ -245,8 +245,8 @@ vector<float> breast::getDistBright(){
     cv::Mat_<int> mMammoDistChar = mMammoDist;
     vecDistBright.resize(256);
     vecDistAv.resize(256);
-    cv::Mat mMammoCopy;
-    cv::cvtColor(mMammo, mMammoCopy, cv::COLOR_BGR2GRAY);
+    cv::Mat mMammoCopy = mMammo8Bit;
+    /* cv::cvtColor(mMammo, mMammoCopy, cv::COLOR_BGR2GRAY); */
     for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}
     for(int i = 0; i < mMammo.cols; i++){
@@ -266,11 +266,11 @@ vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMa
     vecDistAvBrightest.resize(256);
     for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){ vecDistBrightBrightest[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAvBrightest.size(); ++i){ vecDistAvBrightest[i] = 0;}
-    for(int i = 0; i < mMammo.cols; i++){
-        for(int j = 0; j < mMammo.rows; j++){
+    for(int i = 0; i < mMammo8Bit.cols; i++){
+        for(int j = 0; j < mMammo8Bit.rows; j++){
             int iDist = int(mMammoDistChar(j,i));
-            if(int(mMammoCopy.at<uchar>(j,i)) >= vecDistBright[iDist]){
-            vecDistBrightBrightest[iDist]+=float(mMammoCopy.at<uchar>(j,i));
+            if(int(mMammo8Bit.at<uchar>(j,i)) >= vecDistBright[iDist]){
+            vecDistBrightBrightest[iDist]+=float(mMammo8Bit.at<uchar>(j,i));
             vecDistAvBrightest[iDist]++;}
         }
     }
@@ -286,7 +286,7 @@ vector<float> breast::normalBreastThickness(vector<float> vecDistBrightBrightest
 }
 
 void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
-    fileName.pop_back();
+    /* fileName.pop_back(); */
     int dist_w = histSize*2;
     int dist_h = 512;
     #ifdef OL_DRAW_DIST
@@ -296,23 +296,23 @@ void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat 
                         cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
                         cv::Scalar(255, 255, 255), 2, 8, 0);
     }
-    cv::imwrite(fileName+"_dist.jpg", distImage );
+    cv::imwrite(fileName+"_dist.png", distImage );
     #endif
 
     #ifdef OL_DRAW_CORNER
-        cv::imwrite(fileName+"_corner.jpg", mCornerThresh);
+        cv::imwrite(fileName+"_corner.png", mCornerThresh);
     #endif
 
     #ifdef OL_DRAW_DISTMAP
-        cv::imwrite(fileName+"_distmap.jpg", mMammoDist);
+        cv::imwrite(fileName+"_distmap.png", mMammoDist);
     #endif
 
     #ifdef OL_DRAW_THRESH
-        cv::imwrite(fileName+"_thresh.jpg", mMammoThreshedCopy);
+        cv::imwrite(fileName+"_thresh.png", mMammoThreshedCopy);
     #endif
 
     #ifdef OL_DRAW_ALTERED
-        cv::imwrite(fileName+"_alt.jpg", mMammo);
+        cv::imwrite(fileName+"_alt.png", mMammo);
     #endif
 }
 

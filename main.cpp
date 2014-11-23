@@ -31,9 +31,8 @@ int main(int argc, char** argv){
 
     breast breastDat = breast(mammData);
    // cv::normalize(mMammo,mMammo, 0, 255);
-    //cout << mMammo;
-    cv::imwrite("test.png", breastDat.mMammo);
     strFileName = breast::fileNameErase(strFileName);
+
 
     int iColourMax = breastDat.getBitDepth();
 
@@ -42,7 +41,7 @@ int main(int argc, char** argv){
     //
     vector<cv::Mat> bgr_planes = breastDat.separate3channels();
     // Establish the number of bins
-	int histSize = iColourMax;
+	int histSize = 255;
 	// Set the ranges (for B,G,R) )
 	float range[] = {0, float(iColourMax)+1} ;
 	const float* histRange = {range};
@@ -53,26 +52,28 @@ int main(int argc, char** argv){
     breast::drawHist(histSize);
     pair<float, float> iNBin = breastDat.findPeak(histSize);
     float iQuartMax = breastDat.findWidth(iNBin.second, iNBin.first);
-
     //
     //FINDING THE CONTOUR WHICH THE DESRIBES THE EDGE OF THE BREAST
     //
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
-	cv::threshold(breastDat.mMammo, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1);
-	// MAGIC
-	cv::Mat	mMammoThreshedCopy = breastDat.mMammoThreshed;
+	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 128, 255, 0); // You're cheating here.
+	/* cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1); */
+	// Deep copy. 
+	cv::Mat mMammoThreshedCopy = breastDat.mMammoThreshed.clone();
     //
     // DISTANCE TRANSFORM
     //
     // Convert the threshold into greyscale to stop the distance transform complaining. Consider moving this to the start of the programme.
-	cv::cvtColor(breastDat.mMammoThreshed,breastDat.mMammoThreshed, cv::COLOR_BGR2GRAY);
+	/* cv::cvtColor(breastDat.mMammoThreshed,breastDat.mMammoThreshed, cv::COLOR_BGR2GRAY); */
 	// Use a less accurate but smoother looking distance transform. More research needed here
 	cv::distanceTransform(breastDat.mMammoThreshed, breastDat.mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
     cv::Mat mMammoThreshedCont;
-	breastDat.mMammoThreshed.convertTo(mMammoThreshedCont, CV_8U);
-	vector<cv::Point> pEdgeContour = breastDat.distanceTransform();
+	breastDat.mMammoThreshed.convertTo(mMammoThreshedCont, CV_8U, 1./256);
 
+	// The thresholded image gets broken here.
+	vector<cv::Point> pEdgeContour = breastDat.distanceTransform();
+    
 	//
 	// FIGURE OUT WHETHER WE ARE LOOKING AT A LEFT OR RIGHT BREAST
 	//
@@ -81,7 +82,6 @@ int main(int argc, char** argv){
 	 //
 	 // TRY TO FIND A CORNER NEAR THE BOTTOM OF THE BREAST
 	 //
-
     // Make a probability map of likely corners in the mammogram.
 	cv::cornerHarris(breastDat.mMammoThreshed, breastDat.mCorner, 40, 3, 0.04);
 	float iMax = breastDat.findIMax();
@@ -99,6 +99,7 @@ int main(int argc, char** argv){
 
     // Pick a corner to cut off.
     pair<int, int> iContPos = breastDat.pickCornerCutOff(bLeft);
+
     //
     // PAINT OVER UNINTERESTING PARTS OF THE BREAST ON THE THRESHOLDED IMAGE
     //
@@ -108,18 +109,26 @@ int main(int argc, char** argv){
     //
     // FINDING THE BREAST THICKNESS
     //
-
     // Normalise the distance map to fit onto our graph.
+    //
+    //	    This is dangerous... we're losing information here. 32 bit -> 8 bits = 16 million times less resolution...
+    //		We desperately need to look at our classes etc. and make it saner...
+    //
     cv::normalize(breastDat.mMammoDist, breastDat.mMammoDist, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
     vector<float> vecDistBright = breastDat.getDistBright();
-
-    int dist_w = histSize*2; int dist_h = 512;
-    cv::Mat distImage(dist_h, dist_w, CV_8UC3, cv::Scalar(0,0,0));
+    int dist_w = histSize*2; int dist_h = 256;
+    cv::Mat distImage(dist_h, dist_w, CV_8UC1, cv::Scalar(0));
     cv::Mat_<int> mMammoDistChar = breastDat.mMammoDist;
     cv::Mat mMammoCopy;
-    cv::cvtColor(breastDat.mMammo, mMammoCopy, cv::COLOR_BGR2GRAY);
     vector<float> vecDistBrightBrightest = breastDat.brestThickness(histSize, mMammoDistChar, mMammoCopy);
-
+    int bin_w = cvRound(double(dist_w/histSize));
+    for(int i = 1; i < histSize; i++){
+	    line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])) ,
+					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
+					    cv::Scalar(255, 255, 255), 2, 8, 0);
+    }
+    cv::imwrite("test_dist.png", distImage );
+	
     //
     // DRAWING THE PICTURES
     //

@@ -84,6 +84,7 @@ class breast: public mammography, phantomCalibration{
         cv::Mat mMammoThreshed;
         cv::Mat mMammoDist;
         cv::Mat mCorner;
+	cv::Mat mMammo8Bit;
     private:
         double breastVol, fibroVol;
         int iColourMAX;
@@ -101,6 +102,7 @@ class breast: public mammography, phantomCalibration{
                     mMammo.at<Uint16>(j,i) = mammData.pixelVec[i+(int)mammData.Columns*j];
                 }
             }
+	    mMammo.convertTo(mMammo8Bit, CV_8U, 1./256);
         };
         int getBitDepth();
         vector<cv::Mat> separate3channels();
