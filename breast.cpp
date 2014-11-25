@@ -350,23 +350,16 @@ double breast::fibrogland(const cv::Mat imDat, const int thickness, const int ex
     double tgTemp;
     ofstream myfile;
     myfile.open ("example2.txt");
-    cout << "ab" << endl;
-    cout << imDat << endl;
     for(int i = 0; i < imDat.cols; i++){
-        cout << i << endl;
         for(int j = 0; j < imDat.rows; j++){
-            cout << j << endl;
             if(int(imDat.at<Uint16>(j,i)) == 0){
                 tgTemp = -coeff3.second/coeff3.first;
-                cout << "a" << endl;
             } else{
                 tgTemp = (log(double(imDat.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                cout << "a" << endl;
             }
             if(tgTemp >= 0){
                 tg += tgTemp;
                 myfile << imDat.at<Uint16>(j,i) << " " << tgTemp << "\n";
-                cout << "a" << endl;
             }
         }
     }
@@ -397,7 +390,6 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, 
     int maxVal = atoi(maxValue.c_str());
     string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
-    cout << "coefficients: " << coeff3.first << "\t" << coeff3.second << endl;
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
             if(mMammoThreshed.at<Uint8>(j,i) > 0){
@@ -406,9 +398,10 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, 
                     } else{
                         tg.at<Uint8>(j,i) = 0;
 			if (j%200 == 1){
-			cout << ((log(double(mMammo.at<Uint16>(j,i))/exposure)));}//-coeff3.second));}///coeff3.first)//*double(maxVal/255) << "\t";}
+			//cout << ((log(double(mMammo.at<Uint16>(j,i))/exposure)));}//-coeff3.second));}///coeff3.first)//*double(maxVal/255) << "\t";}
                         //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
-                    }
+			}
+		    }
         }
     }
     }

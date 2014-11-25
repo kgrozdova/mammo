@@ -195,6 +195,7 @@ int main(int argc, char** argv){
     ofstream myfile;
     myfile.open ("example2.txt");
 
+    /* cout << coeff1.first << "\t" << coeff2.first << "\t" << coeff3.first << endl; */
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
             if(breastDat.mMammoThreshed.at<Uint8>(j,i) > 0){
@@ -205,7 +206,6 @@ int main(int argc, char** argv){
                 }
                 if(tgTemp >= 0){
                     tg += tgTemp;
-                    cout << tgTemp << endl;
                     myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
                 }
             }
@@ -213,8 +213,6 @@ int main(int argc, char** argv){
     }
     myfile.close();
     int t = breastDat.totalBreast(mammData);
-    cout << tg << " " << t << endl;
     double glandPercent = breast::glandpercent(tg, t);
-    cout << "Glandular percent:" << glandPercent << endl;
     breastDat.thicknessMap(coeff3, exposure, mammData);
 }

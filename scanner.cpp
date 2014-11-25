@@ -13,6 +13,7 @@ pair<double,double> scanner::linearfit(const double* x, const double* y, const i
     pair<double,double> ret;
     ret.first = c1;
     ret.second = c0;
+    //cout << "ret:" << ret.first << "\t" << ret.second << "\t" << flush;
     return ret;
 }
 

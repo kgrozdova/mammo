@@ -30,9 +30,8 @@ class mammography: public various{
         vector<Uint16> pixelVec;
     public:
         mammography(){
-            cout << "mammography constructor is called" << endl;
         };
-        ~mammography() {cout << "mammography destructor is called" << endl;}
+        ~mammography() {}
         void loadHeaderData(const string fileName);
         void loadPixelData(const string fileName);
 };
@@ -42,9 +41,8 @@ class phantomCalibration: public various{
         vector< pair<double, double> > dataArr;
     public:
         phantomCalibration(){
-            cout << "phantomCalibration constructor is called" << endl;
         };
-        ~phantomCalibration() {cout << "phantomCalibration destructor is called" << endl;}
+        ~phantomCalibration() {}
         // input the fibroglandular tissue thickness value into dataArr
         void inputData(const double t, const double ln_MPV_mAs);
         // get the phantomCalibration class object with dataArr containing the data for given total thickness
@@ -70,8 +68,8 @@ class scanner: public phantomCalibration, dailyCalibration{
     public:
         double shift;
     public:
-        scanner(const int shiftIn): shift(shiftIn) { cout << "scanner constructor is called" << endl; };
-        ~scanner() {cout << "scanner destructor is called" << endl;}
+        scanner(const int shiftIn): shift(shiftIn) { };
+        ~scanner() {}
         // fit linear function into data
         static pair<double,double> linearfit(const double* x1, const double* y1, const int sizeArr);
         // calculate shift from the QC data point

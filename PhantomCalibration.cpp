@@ -7,7 +7,6 @@ using namespace std;
 
 void phantomCalibration::inputData(const double tg, const double ln_MPV_mAs){
     dataArr.push_back(make_pair(tg,ln_MPV_mAs));
-
 }
 
 phantomCalibration phantomCalibration::getThicknessData(const string filTar, const int kV, const int t){
@@ -20,7 +19,6 @@ phantomCalibration phantomCalibration::getThicknessData(const string filTar, con
     string fileName = "av_calib_data" + filTar + kVStr + "_" + strT + ".csv";
     ifs.open(fileName, ifstream::in);
     while (ifs.good()){
-        cout <<
         getline(ifs, str);
         if( ifs.eof() ) break;
         found = str.find(",");
@@ -32,7 +30,12 @@ phantomCalibration phantomCalibration::getThicknessData(const string filTar, con
         thicknessData.inputData(atof(gland.c_str()), atof(ln_MPV_mAs.c_str()));
     }
     ifs.close();
-    various::iterateVectorToFile(thicknessData.dataArr, "example.txt");
+    various::iterateVectorToFile(thicknessData.dataArr, "myexample.txt");
+    cout << "iterating through vec" << endl;
+    for(auto i:thicknessData.dataArr){
+	cout << i.first << endl;
+    }
+    cout << "done." << endl;
     return thicknessData;
 }
 
