@@ -31,11 +31,6 @@ phantomCalibration phantomCalibration::getThicknessData(const string filTar, con
     }
     ifs.close();
     various::iterateVectorToFile(thicknessData.dataArr, "myexample.txt");
-    cout << "iterating through vec" << endl;
-    for(auto i:thicknessData.dataArr){
-	cout << i.first << endl;
-    }
-    cout << "done." << endl;
     return thicknessData;
 }
 

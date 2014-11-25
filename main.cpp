@@ -195,7 +195,6 @@ int main(int argc, char** argv){
     ofstream myfile;
     myfile.open ("example2.txt");
 
-    /* cout << coeff1.first << "\t" << coeff2.first << "\t" << coeff3.first << endl; */
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
             if(breastDat.mMammoThreshed.at<Uint8>(j,i) > 0){
