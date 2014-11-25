@@ -404,7 +404,7 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, 
                         tg.at<Uint16>(j,i) = thickness;
                     } else{
                         tg.at<Uint16>(j,i) = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                        //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
+			 //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
                     }
         }
     }
