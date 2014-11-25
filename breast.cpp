@@ -403,12 +403,12 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, 
                     if(int(mMammo.at<Uint16>(j,i)) == 0){
                         tg.at<Uint16>(j,i) = thickness;
                     } else{
-                        tg.at<Uint16>(j,i) = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                        tg.at<Uint16>(j,i) = ((log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first)*double(maxVal/255);
                         //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
                     }
         }
     }
     }
-    cv::normalize(tg, tg, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
+    //cv::normalize(tg, tg, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
     cv::imwrite("test_thickMap.jpg",tg);
 }
