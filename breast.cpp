@@ -392,23 +392,26 @@ double breast::glandpercent(const double tg, const double t){
 }
 
 void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, const mammography mammData){
-    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_16UC1, cvScalar(0));
+    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
     string maxValue = various::ToString<long>(mammData.LargestImagePixelValue);
     int maxVal = atoi(maxValue.c_str());
     string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
+    cout << "coefficients: " << coeff3.first << "\t" << coeff3.second << endl;
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
             if(mMammoThreshed.at<Uint8>(j,i) > 0){
                     if(int(mMammo.at<Uint16>(j,i)) == 0){
-                        tg.at<Uint16>(j,i) = thickness;
+                        tg.at<Uint8>(j,i) = thickness;
                     } else{
-                        tg.at<Uint16>(j,i) = ((log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first)*double(maxVal/255);
+                        tg.at<Uint8>(j,i) = 0;
+			if (j%200 == 1){
+			cout << ((log(double(mMammo.at<Uint16>(j,i))/exposure)));}//-coeff3.second));}///coeff3.first)//*double(maxVal/255) << "\t";}
                         //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
                     }
         }
     }
     }
-    //cv::normalize(tg, tg, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
-    cv::imwrite("test_thickMap.jpg",tg);
+    cv::normalize(tg, tg, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
+    cv::imwrite("test_thickMap.png",tg);
 }
