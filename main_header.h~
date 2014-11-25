@@ -6,7 +6,6 @@
 #include "dcmtk/dcmimgle/dcmimage.h" /* for DicomImage */
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <iostream>
 #include <fstream>
@@ -85,7 +84,6 @@ class breast: public mammography, phantomCalibration{
         cv::Mat mMammoThreshed;
         cv::Mat mMammoDist;
         cv::Mat mCorner;
-        cv::Mat mMammo8Bit;
     private:
         double breastVol, fibroVol;
         int iColourMAX;
@@ -103,7 +101,6 @@ class breast: public mammography, phantomCalibration{
                     mMammo.at<Uint16>(j,i) = mammData.pixelVec[i+(int)mammData.Columns*j];
                 }
             }
-	    mMammo.convertTo(mMammo8Bit, CV_8U, 1./256);
         };
         int getBitDepth();
         vector<cv::Mat> separate3channels();
@@ -121,10 +118,10 @@ class breast: public mammography, phantomCalibration{
         vector<float> brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy);
         static vector<float> normalBreastThickness(vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
         void drawImages(string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize);
-        static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
-        double totalBreast(const mammography mammData);
+
+        static double fibrogland(mammography mammData, calibData calibration);
+        static double totalBreast(mammography mammData);
         static double glandpercent(const double tg, const double t);
-        void thicknessMap(const pair<double,double> coeff3, const int exposure, const mammography mammData);
 };
 
 template <typename T> string various::ToString(T input){
@@ -135,3 +132,5 @@ template <typename T> string various::ToString(T input){
 }
 
 #endif // MAIN_HEADER_H
+
+

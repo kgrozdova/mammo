@@ -11,8 +11,8 @@
 //	#define OL_DRAW_HIST
 #define OL_DRAW_THRESH
 #define OL_DRAW_DIST
-	#define OL_DRAW_DISTMAP
-	/* #define OL_DRAW_CORNER */
+//	#define OL_DRAW_DISTMAP
+//	#define OL_DRAW_CORNER
 #endif
 
 typedef map< string, phantomCalibration> calibData;
@@ -225,7 +225,7 @@ void breast::deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const 
                 lastY = i.y;
             }
 
-            /* cv::cvtColor(mMammoThreshedCopy, mMammoThreshedCopy, cv::COLOR_BGR2GRAY); */
+            cv::cvtColor(mMammoThreshedCopy, mMammoThreshedCopy, cv::COLOR_BGR2GRAY);
             for(auto i:pEdgeThrowAway){
                 if(bLeft){
                     for(int x = 0; x <= i.x+2; x++){
@@ -245,8 +245,8 @@ vector<float> breast::getDistBright(){
     cv::Mat_<int> mMammoDistChar = mMammoDist;
     vecDistBright.resize(256);
     vecDistAv.resize(256);
-    cv::Mat mMammoCopy = mMammo8Bit;
-    /* cv::cvtColor(mMammo, mMammoCopy, cv::COLOR_BGR2GRAY); */
+    cv::Mat mMammoCopy;
+    cv::cvtColor(mMammo, mMammoCopy, cv::COLOR_BGR2GRAY);
     for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}
     for(int i = 0; i < mMammo.cols; i++){
@@ -266,11 +266,11 @@ vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMa
     vecDistAvBrightest.resize(256);
     for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){ vecDistBrightBrightest[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAvBrightest.size(); ++i){ vecDistAvBrightest[i] = 0;}
-    for(int i = 0; i < mMammo8Bit.cols; i++){
-        for(int j = 0; j < mMammo8Bit.rows; j++){
+    for(int i = 0; i < mMammo.cols; i++){
+        for(int j = 0; j < mMammo.rows; j++){
             int iDist = int(mMammoDistChar(j,i));
-            if(int(mMammo8Bit.at<uchar>(j,i)) >= vecDistBright[iDist]){
-            vecDistBrightBrightest[iDist]+=float(mMammo8Bit.at<uchar>(j,i));
+            if(int(mMammoCopy.at<uchar>(j,i)) >= vecDistBright[iDist]){
+            vecDistBrightBrightest[iDist]+=float(mMammoCopy.at<uchar>(j,i));
             vecDistAvBrightest[iDist]++;}
         }
     }
@@ -286,7 +286,7 @@ vector<float> breast::normalBreastThickness(vector<float> vecDistBrightBrightest
 }
 
 void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
-    /* fileName.pop_back(); */
+    fileName.pop_back();
     int dist_w = histSize*2;
     int dist_h = 512;
     #ifdef OL_DRAW_DIST
@@ -296,27 +296,28 @@ void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat 
                         cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
                         cv::Scalar(255, 255, 255), 2, 8, 0);
     }
-    cv::imwrite(fileName+"_dist.png", distImage );
+    cv::imwrite(fileName+"_dist.jpg", distImage );
     #endif
 
     #ifdef OL_DRAW_CORNER
-        cv::imwrite(fileName+"_corner.png", mCornerThresh);
+        cv::imwrite(fileName+"_corner.jpg", mCornerThresh);
     #endif
 
     #ifdef OL_DRAW_DISTMAP
-        cv::imwrite(fileName+"_distmap.png", mMammoDist);
+        cv::imwrite(fileName+"_distmap.jpg", mMammoDist);
     #endif
 
     #ifdef OL_DRAW_THRESH
-        cv::imwrite(fileName+"_thresh.png", mMammoThreshedCopy);
+        cv::imwrite(fileName+"_thresh.jpg", mMammoThreshedCopy);
     #endif
 
     #ifdef OL_DRAW_ALTERED
-        cv::imwrite(fileName+"_alt.png", mMammo);
+        cv::imwrite(fileName+"_alt.jpg", mMammo);
     #endif
 }
 
-double breast::fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration){
+double breast::fibrogland(mammography mammData, calibData calibration){
+    int arr_size = (int)mammData.Rows*(int)mammData.Columns;
     phantomCalibration temp = calibration["lower"];
     int sizeArr = temp.dataArr.size();
     double x[sizeArr];
@@ -341,74 +342,52 @@ double breast::fibrogland(const cv::Mat imDat, const int thickness, const int ex
     } else{
         yStep = (coeff2.second - coeff1.second)/10;
     }
+    string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
+    int thickness = atoi(bodyThickness.c_str());
     pair<double,double> coeff3;
     div_t divresult;
     divresult = div(thickness,10);
     coeff3.first = (coeff1.first+coeff2.first)/2;
     coeff3.second = coeff1.second+ yStep*divresult.rem;
     double tg(0);
+    string Exposure = various::ToString<long>(mammData.Exposure);
     double tgTemp;
     ofstream myfile;
     myfile.open ("example2.txt");
-    cout << "ab" << endl;
-    cout << imDat << endl;
-    for(int i = 0; i < imDat.cols; i++){
-        cout << i << endl;
-        for(int j = 0; j < imDat.rows; j++){
-            cout << j << endl;
-            if(int(imDat.at<Uint16>(j,i)) == 0){
-                tgTemp = -coeff3.second/coeff3.first;
-                cout << "a" << endl;
-            } else{
-                tgTemp = (log(double(imDat.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                cout << "a" << endl;
-            }
-            if(tgTemp >= 0){
-                tg += tgTemp;
-                myfile << imDat.at<Uint16>(j,i) << " " << tgTemp << "\n";
-                cout << "a" << endl;
-            }
+    for(auto pixel:mammData.pixelVec){
+        if(int(pixel) == 0){
+            tgTemp = -coeff3.second/coeff3.first;
+        } else{
+            tgTemp = (log(double(pixel)/atoi(Exposure.c_str()))-coeff3.second)/coeff3.first;
+        }
+        if(tgTemp >= 0){
+            tg += tgTemp;
+            myfile << int(pixel)<< " " << tgTemp << "\n";
         }
     }
     myfile.close();
     return tg;
 }
 
-double breast::totalBreast(const mammography mammData){
+double breast::totalBreast(mammography mammData){
     string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
-    int counter(0);
-    for(int i = 0; i < mMammoThreshed.cols; i++){
-        for(int j = 0; j < mMammoThreshed.rows; j++){
-            if(mMammoThreshed.at<Uint8>(j,i) == 1)
-                counter++;
-        }
-    }
-    return double(counter*thickness);
+    return (double)mammData.Rows*(double)mammData.Columns*thickness;
 }
 
 double breast::glandpercent(const double tg, const double t){
     return tg*100/t;
 }
 
-void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, const mammography mammData){
-    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_16UC1, cvScalar(0));
-    string maxValue = various::ToString<long>(mammData.LargestImagePixelValue);
-    int maxVal = atoi(maxValue.c_str());
-    string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
-    int thickness = atoi(bodyThickness.c_str());
-    for(int i = 0; i < mMammo.cols; i++){
-        for(int j = 0; j < mMammo.rows; j++){
-            if(mMammoThreshed.at<Uint8>(j,i) > 0){
-                    if(int(mMammo.at<Uint16>(j,i)) == 0){
-                        tg.at<Uint16>(j,i) = thickness;
-                    } else{
-                        tg.at<Uint16>(j,i) = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                        //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
-                    }
-        }
-    }
-    }
-    cv::normalize(tg, tg, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
-    cv::imwrite("test_thickMap.jpg",tg);
-}
+//void breast::thicknessMap(const int width, const int height, ){
+//    // Allocate a 1-channel byte image
+//    IplImage* img1=cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,1);
+//    typedef Image<unsigned char>  BwImage;
+//    BwImage imgA(img);
+//    for(int i = 0; i < width; i++){
+//        for(int j = 0; j < height; j++){
+//            imgA[i][j] = ;
+//        }
+//    }
+//
+//}
