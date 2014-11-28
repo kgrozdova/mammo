@@ -50,6 +50,9 @@ void mammography::loadHeaderData(const string fileName){
         if (fileformat.getDataset()->findAndGetOFString(DCM_AnodeTargetMaterial, Target).good()){
         }else
             cerr << "Error: cannot access AnodeTargetMaterial!" << endl;
+        if (fileformat.getDataset()->findAndGetLongInt(DCM_BitsStored, BitsStored).good()){
+        }else
+            cerr << "Error: cannot access BitsStored!" << endl;
      }
 }
 
@@ -62,12 +65,16 @@ void mammography::loadPixelData(const string fileName){
       if (image->getStatus() == EIS_Normal){
         if (image->isMonochrome()){
           image->setMinMaxWindow();
-          Uint16* pixelArr;
-          pixelArr = (Uint16*)(image->getOutputData(16 /* bits */));
-          long numByte = image->getOutputDataSize();
-          cout << numByte/2 << endl; // 2 bytes per pixel
-          for(int i  = 0; i < numByte/2; i++)
-            pixelVec.push_back(pixelArr[i]);
+        const DiPixel* dipix = 0;
+        void* pixels = 0;
+        if(image){
+            dipix = image->getInterData();
+            pixels = (const_cast<DiPixel*>(dipix))->getDataPtr();
+        }
+        Uint16 *pixelData = (Uint16*)pixels;
+          for(int i  = 0; i < int(image->getHeight())*int(image->getWidth()); i++){
+            pixelVec.push_back(pixelData[i]);
+            }
         }
       } else
         cerr << "Error: cannot load DICOM image (" << DicomImage::getString(image->getStatus()) << ")" << endl;

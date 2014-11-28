@@ -25,7 +25,7 @@ class various{
 
 class mammography: public various{
     public:
-        long XRayTubeCurrent, Exposure, Rows, Columns, BitsAllocated, PixelRepresentation, SmallestImagePixelValue, LargestImagePixelValue;
+        long XRayTubeCurrent, Exposure, Rows, Columns, BitsAllocated, PixelRepresentation, SmallestImagePixelValue, LargestImagePixelValue, BitsStored;
         OFString KVP, BodyPartThickness, CompressionForce, Filter, Target;
         vector<Uint16> pixelVec;
     public:

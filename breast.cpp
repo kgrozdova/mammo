@@ -392,14 +392,13 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, 
     int thickness = atoi(bodyThickness.c_str());
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
-            if(mMammoThreshed.at<Uint8>(j,i) > 0){
+            if(mMammoThreshed.at<Uint8>(j,i) == 0){
                     if(int(mMammo.at<Uint16>(j,i)) == 0){
                         tg.at<Uint8>(j,i) = thickness;
                     } else{
-                        tg.at<Uint8>(j,i) = ((log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first)*double(maxVal/255);
-                        //cout << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
-			
-		    }
+                        tg.at<Uint8>(j,i) = ((log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first)*double(16383/255);
+                        //cout << double(mMammo.at<Uint16>(j,i)) << " " << (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first << endl;
+                    }
         }
     }
     }

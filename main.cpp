@@ -32,8 +32,6 @@ int main(int argc, char** argv){
     breast breastDat = breast(mammData);
    // cv::normalize(mMammo,mMammo, 0, 255);
     strFileName = breast::fileNameErase(strFileName);
-
-
     int iColourMax = breastDat.getBitDepth();
 
     //
@@ -58,6 +56,7 @@ int main(int argc, char** argv){
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
 	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 128, 255, 0); // You're cheating here.
+	cv::imwrite("test_mMammo.png", breastDat.mMammo);
 	/* cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1); */
 	// Deep copy.
 	cv::Mat mMammoThreshedCopy = breastDat.mMammoThreshed.clone();
@@ -194,24 +193,27 @@ int main(int argc, char** argv){
     double tgTemp;
     ofstream myfile;
     myfile.open ("example2.txt");
-
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
-            if(breastDat.mMammoThreshed.at<Uint8>(j,i) > 0){
+            if(breastDat.mMammoThreshed.at<Uint8>(j,i) == 0){
                 if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
-                    tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                        tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                        //cout << log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure) << endl;
                 }
-                if(tgTemp >= 0){
+                if(tgTemp >= 0 && tgTemp <= thickness)
                     tg += tgTemp;
-                    myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
-                }
+                if(tgTemp > thickness)
+                    tg += thickness;
+                    //myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
+                myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
             }
         }
     }
     myfile.close();
     int t = breastDat.totalBreast(mammData);
     double glandPercent = breast::glandpercent(tg, t);
+    cout << glandPercent << endl;
     breastDat.thicknessMap(coeff3, exposure, mammData);
 }
