@@ -55,7 +55,7 @@ int main(int argc, char** argv){
     //
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
-	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 128, 255, 0); // You're cheating here.
+	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 50, 255, 0); // You're cheating here.
 	cv::imwrite("test_mMammo.png", breastDat.mMammo);
 	/* cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1); */
 	// Deep copy.
