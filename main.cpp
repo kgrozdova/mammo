@@ -55,7 +55,7 @@ int main(int argc, char** argv){
     //
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
-	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 50, 255, 0); // You're cheating here.
+	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 28, 255, 1); // You're cheating here.
 	cv::imwrite("test_mMammo.png", breastDat.mMammo);
 	/* cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1); */
 	// Deep copy.
@@ -103,7 +103,7 @@ int main(int argc, char** argv){
     // PAINT OVER UNINTERESTING PARTS OF THE BREAST ON THE THRESHOLDED IMAGE
     //
 
-    breastDat.deleteUnneeded(bLeft, mMammoThreshedCopy, pEdgeContourCopy, iContPos.second);
+    /* breastDat.deleteUnneeded(bLeft, mMammoThreshedCopy, pEdgeContourCopy, iContPos.second); */
 
     //
     // FINDING THE BREAST THICKNESS

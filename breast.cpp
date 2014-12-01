@@ -391,7 +391,7 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, 
     double tgTemp;
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
-            if(mMammoThreshed.at<Uint8>(j,i) == 0){
+            if(mMammoThreshed.at<Uint8>(j,i) != 0){
                 if(int(mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
