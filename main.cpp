@@ -1,4 +1,6 @@
 #include "main_header.h"
+#include "breast.h"
+
 #include <map>
 #include <iterator>
 #include <vector>
@@ -56,7 +58,7 @@ int main(int argc, char** argv){
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
 	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 28, 255, 1); // You're cheating here.
-	cv::imwrite("test_mMammo.png", breastDat.mMammo);
+	/* cv::imwrite("test_mMammo.png", breastDat.mMammo); */
 	/* cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1); */
 	// Deep copy.
 	cv::Mat mMammoThreshedCopy = breastDat.mMammoThreshed.clone();
@@ -126,7 +128,7 @@ int main(int argc, char** argv){
 					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
 					    cv::Scalar(255, 255, 255), 2, 8, 0);
     }
-    cv::imwrite("test_dist.png", distImage );
+    /* cv::imwrite("test_dist.png", distImage ); */
 
     //
     // DRAWING THE PICTURES

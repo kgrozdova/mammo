@@ -1,11 +1,16 @@
+#pragma once
+
 #include <string>
 #include <sstream>
+#include <utility>
+#include <vector>
 
-using namespace std;
+std::string intToString(int input);
 
-string intToString(int input){
-    stringstream ss;
-    ss << input;
-    string output = ss.str();
-    return output;
-}
+class various{
+    public:
+        template <typename T> static std::string ToString(T input);
+        static void iterateVectorToFile(std::vector<std::pair<double, double>> vectorInput, std::string fileName);
+        static std::string fileNameErase(std::string fileName);
+};
+

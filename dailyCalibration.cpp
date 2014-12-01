@@ -1,7 +1,6 @@
-#include "main_header.h"
-#include <math.h>
-#include <string>
-#include <sstream>
+#include "dailyCalibration.h"
+
+using namespace::std;
 
 void dailyCalibration::insertFilTar(mammography mammData){
     string filter = various::ToString<OFString>(mammData.Filter);

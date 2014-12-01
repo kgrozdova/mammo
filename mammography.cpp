@@ -1,11 +1,6 @@
-#include "dcmtk/config/osconfig.h"    /* make sure OS specific configuration is included first */
-//#include "dcmtk/dcmdata/dctk.h"
-//#include "dcmtk/dcmimgle/dcmimage.h" /* for DicomImage */
-#include "dcmtk/dcmjpeg/djencode.h"
-#include "dcmtk/dcmjpeg/djrplol.h"
-#include "main_header.h"
+#include "mammography.h"
 
-void mammography::loadHeaderData(const string fileName){
+void mammography::loadHeaderData(const std::string fileName){
      DcmFileFormat fileformat;
      const char* fName = fileName.c_str();
      OFCondition status = fileformat.loadFile(fName);
@@ -13,50 +8,50 @@ void mammography::loadHeaderData(const string fileName){
         if (fileformat.getDataset()->findAndGetLongInt(DCM_XRayTubeCurrent, XRayTubeCurrent).good()){
             // log
         }else
-            cerr << "Error: cannot access XRayTubeCurrent!" << endl;
+            std::cerr << "Error: cannot access XRayTubeCurrent!" << std::endl;
         if (fileformat.getDataset()->findAndGetOFString(DCM_KVP, KVP).good()){
         }else
-            cerr << "Error: cannot access KVP!" << endl;
+            std::cerr << "Error: cannot access KVP!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_Exposure, Exposure).good()){
         }else
-            cerr << "Error: cannot access Exposure!" << endl;
+            std::cerr << "Error: cannot access Exposure!" << std::endl;
         if (fileformat.getDataset()->findAndGetOFString(DCM_BodyPartThickness, BodyPartThickness).good()){
         }else
-            cerr << "Error: cannot access BodyPartThickness!" << endl;
+            std::cerr << "Error: cannot access BodyPartThickness!" << std::endl;
         if (fileformat.getDataset()->findAndGetOFString(DCM_CompressionForce, CompressionForce).good()){
         }else
-            cerr << "Error: cannot access CompressionForce!" << endl;
+            std::cerr << "Error: cannot access CompressionForce!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_Rows, Rows).good()){
         }else
-            cerr << "Error: cannot access Rows!" << endl;
+            std::cerr << "Error: cannot access Rows!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_Columns, Columns).good()){
         }else
-            cerr << "Error: cannot access Columns!" << endl;
+            std::cerr << "Error: cannot access Columns!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_BitsAllocated, BitsAllocated).good()){
         }else
-            cerr << "Error: cannot access BitsAllocated!" << endl;
+            std::cerr << "Error: cannot access BitsAllocated!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_PixelRepresentation, PixelRepresentation).good()){
         }else
-            cerr << "Error: cannot access PixelRepresentation!" << endl;
+            std::cerr << "Error: cannot access PixelRepresentation!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_SmallestImagePixelValue, SmallestImagePixelValue).good()){
         }else
-            cerr << "Error: cannot access SmallestImagePixelValue!" << endl;
+            std::cerr << "Error: cannot access SmallestImagePixelValue!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_LargestImagePixelValue, LargestImagePixelValue).good()){
         }else
-            cerr << "Error: cannot access LargestImagePixelValue!" << endl;
+            std::cerr << "Error: cannot access LargestImagePixelValue!" << std::endl;
         if (fileformat.getDataset()->findAndGetOFString(DCM_FilterMaterial, Filter).good()){
         }else
-            cerr << "Error: cannot access FilterMaterial!" << endl;
+            std::cerr << "Error: cannot access FilterMaterial!" << std::endl;
         if (fileformat.getDataset()->findAndGetOFString(DCM_AnodeTargetMaterial, Target).good()){
         }else
-            cerr << "Error: cannot access AnodeTargetMaterial!" << endl;
+            std::cerr << "Error: cannot access AnodeTargetMaterial!" << std::endl;
         if (fileformat.getDataset()->findAndGetLongInt(DCM_BitsStored, BitsStored).good()){
         }else
-            cerr << "Error: cannot access BitsStored!" << endl;
+            std::cerr << "Error: cannot access BitsStored!" << std::endl;
      }
 }
 
-void mammography::loadPixelData(const string fileName){
+void mammography::loadPixelData(const std::string fileName){
     char strIn[1024];
     strncpy(strIn, fileName.c_str(), sizeof(strIn));
     strIn[sizeof(strIn) - 1] = 0;
@@ -77,7 +72,7 @@ void mammography::loadPixelData(const string fileName){
             }
         }
       } else
-        cerr << "Error: cannot load DICOM image (" << DicomImage::getString(image->getStatus()) << ")" << endl;
+        std::cerr << "Error: cannot load DICOM image (" << DicomImage::getString(image->getStatus()) << ")" << std::endl;
     }
     delete image;
 }

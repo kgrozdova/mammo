@@ -1,8 +1,4 @@
-#include <iostream>
-#include <math.h>
-#include "main_header.h"
-#include <gsl/gsl_fit.h>
-#include <gsl/gsl_poly.h>
+#include "scanner.h"
 
 using namespace std;
 
