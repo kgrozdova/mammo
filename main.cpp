@@ -198,7 +198,7 @@ int main(int argc, char** argv){
     myfile.open ("example2.txt");
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
-            if(breastDat.mMammoThreshed.at<Uint8>(j,i) == 0){
+            if(breastDat.mMammoThreshed.at<Uint8>(j,i) == 1){
                 if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
