@@ -363,8 +363,8 @@ double breast::fibrogland(const cv::Mat imDat, const int thickness, const int ex
     return tg;
 }
 
-double breast::totalBreast(const mammography mammData){
-    string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
+double breast::totalBreast(){
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
     int counter(0);
     for(int i = 0; i < mMammoThreshed.cols; i++){
@@ -380,9 +380,9 @@ double breast::glandpercent(const double tg, const double t){
     return tg*100/t;
 }
 
-void breast::thicknessMap(const pair<double,double> coeff3, const int exposure, const mammography mammData){
+void breast::thicknessMap(const pair<double,double> coeff3, const int exposure){
     cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
-    string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
     double tgTemp;
     for(int i = 0; i < mMammo.cols; i++){

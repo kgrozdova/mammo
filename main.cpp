@@ -7,15 +7,16 @@
 typedef map< string, phantomCalibration> calibData;
 
 int main(int argc, char** argv){
+    string strCmdName = argv[0];
     if(argc != 2){
-        cerr << "No DICOM found" << endl;
+        cerr << "Error: no DICOM file specified. Usage: " << strCmdName << " FILENAME.dcm" << endl;
         return -1;
     }
     string strFileName = argv[1];
-    mammography mammData;
-    mammData.mammography::loadHeaderData(strFileName);
+    mammography mammData(strFileName);
+    /* mammData.mammography::loadHeaderData(strFileName); */
     // load data from processed DICOM file
-    mammData.mammography::loadPixelData(strFileName);
+    /* mammData.mammography::loadPixelData(strFileName); */
 
     //                  //
     // Image processing //
@@ -31,7 +32,7 @@ int main(int argc, char** argv){
     //	#define OL_DRAW_CORNER
     #endif
 
-    breast breastDat = breast(mammData);
+    breast breastDat = breast(strFileName);
    // cv::normalize(mMammo,mMammo, 0, 255);
     strFileName = breast::fileNameErase(strFileName);
     int iColourMax = breastDat.getBitDepth();
@@ -214,8 +215,8 @@ int main(int argc, char** argv){
         }
     }
     myfile.close();
-    int t = breastDat.totalBreast(mammData);
+    int t = breastDat.totalBreast();
     double glandPercent = breast::glandpercent(tg, t);
     cout << glandPercent << endl;
-    breastDat.thicknessMap(coeff3, exposure, mammData);
+    breastDat.thicknessMap(coeff3, exposure);
 }

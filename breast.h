@@ -24,17 +24,19 @@ class breast: public mammography, phantomCalibration{
 	std::vector<float> vecDistBright;
 	std::vector<float> vecDistBrightBrightest;
     public:
+	std::string strFileName;
 	cv::Mat mMammo;
 	cv::Mat mHistB;
 	cv::Mat mMammoThreshed;
 	cv::Mat mMammoDist;
 	cv::Mat mCorner;
 	cv::Mat mMammo8Bit;
-	breast(mammography mammData){
-	    mMammo = cv::Mat((int)mammData.Rows, (int)mammData.Columns, CV_16UC1, cv::Scalar(1));
-	    for(int i = 0; i < mammData.Columns; i++){
-		for(int j = 0; j < mammData.Rows; j++){
-		    mMammo.at<Uint16>(j,i) = mammData.pixelVec[i+(int)mammData.Columns*j];
+	breast(std::string t_strFileName): mammography(t_strFileName){
+	    strFileName = t_strFileName;
+	    mMammo = cv::Mat((int)this->Rows, (int)this->Columns, CV_16UC1, cv::Scalar(1));
+	    for(int i = 0; i < this->Columns; i++){
+		for(int j = 0; j < this->Rows; j++){
+		    mMammo.at<Uint16>(j,i) = this->pixelVec[i+(int)this->Columns*j];
 		}
 	    }
 	    mMammo.convertTo(mMammo8Bit, CV_8U, 1./256);
@@ -56,9 +58,9 @@ class breast: public mammography, phantomCalibration{
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
         void drawImages(std::string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize);
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
-        double totalBreast(const mammography mammData);
+        double totalBreast();
         static double glandpercent(const double tg, const double t);
-        void thicknessMap(const std::pair<double,double> coeff3, const int exposure, const mammography mammData);
+        void thicknessMap(const std::pair<double,double> coeff3, const int exposure);
 };
 
 
