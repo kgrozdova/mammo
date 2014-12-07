@@ -13,105 +13,149 @@
 
 typedef map< string, phantomCalibration> calibData;
 
+breast::breast(std::string t_strFileName): mammography(t_strFileName){
+    this->pixelVec2Mat();
+    cv::minMaxLoc(mMammo,&this->dMinPixelValue,&this->dMaxPixelValue);
+    this->getBreastROI();
+    this->getBreastDistMap();
+    this->getBreastEdge();
+}
 
+void breast::pixelVec2Mat(){
+    this->mMammo = cv::Mat((int)this->Rows, (int)this->Columns, CV_16UC1, cv::Scalar(1));
+    for(int i = 0; i < this->Columns; i++){
+	for(int j = 0; j < this->Rows; j++){
+	    this->mMammo.at<Uint16>(j,i) = this->pixelVec[i+(int)this->Columns*j];
+	}
+    }
+    this->mMammo.convertTo(mMammo8Bit, CV_8U, 1./256);
+    this->pixelVec.clear();
+    this->getBitDepth();
+}
+
+void breast::getBreastROI(){
+    // Establish the number of bins
+    // Set the ranges (for B,G,R) )
+    float range[] = {static_cast<float>(dMinPixelValue), static_cast<float>(dMaxPixelValue)} ;
+    const float* fHistRange = {range};
+    // Set histogram behaviour.
+    bool bUniform = true; bool bAccumulate = false;
+    // Compute the histogram.
+    cv::calcHist(&mMammo, 1, 0, cv::Mat(), this->mHist, 1, &this->iHistSize, &fHistRange, bUniform, bAccumulate );
+    this->drawHist();
+    pair<float,float> pPeakValAndLoc = this->findHistPeak();
+    double dRangeActual = dMaxPixelValue - dMinPixelValue;
+    double dHistActualRangeRatio = dRangeActual/double(this->iHistSize);
+    int iPeakVal = dHistActualRangeRatio * pPeakValAndLoc.second + this-> dMinPixelValue;
+    int iPeakVal8Bit = iPeakVal/256;
+    /* cv::Mat mMammoROICopy = this->mMammoROI.clone(); */
+    cv::threshold(this->mMammo8Bit, this->mMammoROI, iPeakVal8Bit, 255, 1);
+}
+
+void breast::getBreastDistMap(){
+    cv::distanceTransform(this->mMammoROI.clone(), this->mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
+}
+
+void breast::getBreastEdge(){
+    cv::Mat mMammoThreshedCont;
+    this->mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
+    std::vector<std::vector<cv::Point>> pEdgeContours;
+    cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
+    /* cv::findContours(this->mMammoROI,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE); */ // This works with the density calculation but ruins the thresholded image...
+    cv::imwrite("roi.png", mMammoROI);
+    cv::imwrite("dist.png", mMammoDist);
+   int iContSize = 0;
+    for(auto i:pEdgeContours){
+	if(iContSize < (int)i.size()){
+	    iContSize = i.size();
+	    this->pEdgeContour = i;
+	}
+    }
+}
 int breast::getBitDepth(){
-	// Find bit depth of image and store white value.
-	switch(mMammo.depth()){
-		case CV_8U:
-			this->iColourMAX = 255;
-			break;
-		case CV_8S:
-			this->iColourMAX = 127;
-			break;
-		case CV_16U:
-			this->iColourMAX = 65535;
-			break;
-		case CV_16S:
-			this->iColourMAX = 32767;
-			break;
-		case CV_32S:
-			this->iColourMAX = 2147483647;
-			break;
-		case CV_32F:
-		case CV_64F:
-			exit(1); // Can't cope with that many colours.
-			break;
+    // Find bit depth of image and store white value.
+    switch(mMammo.depth()){
+	case CV_8U:
+	    this->iColourMAX = 255;
+	    break;
+	case CV_8S:
+	    this->iColourMAX = 127;
+	    break;
+	case CV_16U:
+	    this->iColourMAX = 65535;
+	    break;
+	case CV_16S:
+	    this->iColourMAX = 32767;
+	    break;
+	case CV_32S:
+	    this->iColourMAX = 2147483647;
+	    break;
+	case CV_32F:
+	case CV_64F:
+	    exit(1); // Can't cope with that many colours.
+	    break;
+    }
+
+    return this->iColourMAX;
+}
+
+void breast::drawHist(){
+    // Draw it
+    int histSize = this->iHistSize;
+    int hist_w = histSize; int hist_h = 512;
+    cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(0,0,0));
+
+    // Normalize the result to [ 0, histImage.rows ].
+    cv::normalize(this->mHist, mHist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
+
+    float imMax = 0;
+    int bin_w = cvRound(double(hist_w/histSize));
+    float iMax = 0;
+    for(int i = 1; i < histSize; i++){
+	line(histImage, cv::Point(bin_w*(i-1), hist_h - cvRound(mHist.at<float>(i-1))) ,
+	    cv::Point(bin_w*(i), hist_h - cvRound(mHist.at<float>(i))),
+	    cv::Scalar(255, 255, 255), 2, 8, 0);
+	if(imMax < mHist.at<float>(i)){
+	    imMax = mHist.at<float>(i);
+	    iMax = i;
 	}
-
-	return this->iColourMAX;
+    }
+    cv::imwrite(strFileName+"_hist.jpg", histImage );
 }
 
-std::vector<cv::Mat> breast::separate3channels(){
-	// Separate the image into 3 channels.
-	std::vector<cv::Mat> bgr_planes;
-	cv::split(mMammo, bgr_planes);
-	return bgr_planes;
-}
-void breast::drawHist(const int histSize){
-	// Draw it.
-    #ifdef OL_DRAW_HIST
-	int hist_w = histSize; int hist_h = 512;
-	cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(0,0,0));
-
-	// Normalize the result to [ 0, histImage.rows ].
-	cv::normalize(mHistB, mHistB, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-
-	float imMax = 0;
-	int bin_w = cvRound(double(hist_w/histSize));
-	float iMax = 0;
-	for(int i = 1; i < histSize; i++){
-		line(histImage, cv::Point(bin_w*(i-1), hist_h - cvRound(mHistB.at<float>(i-1))) ,
-						cv::Point(bin_w*(i), hist_h - cvRound(mHistB.at<float>(i))),
-						cv::Scalar(255, 255, 255), 2, 8, 0);
-		if(imMax < mHistB.at<float>(i)){
-			imMax = mHistB.at<float>(i);
-			iMax = i;
-		}
-	}
-	cv::imwrite(strFilename+"_hist.jpg", histImage );
-    #endif
-}
-
-pair<float, float> breast::findPeak(const int histSize){
+pair<float, float> breast::findHistPeak(){
     float iNMax = 0;
-	float iBinMax = 0;
-	for(int i = histSize - 1; i > histSize*0.5; i--){
-		if(iNMax < mHistB.at<float>(i)){
-			iNMax = mHistB.at<float>(i);
-			iBinMax = i;
-		}
+    float iBinMax = 0;
+    for(int i = this->iHistSize - 1; i > this->iHistSize*0.5; i--){
+	if(iNMax < mHist.at<float>(i)){
+	    iNMax = mHist.at<float>(i);
+	    iBinMax = i;
 	}
-	return make_pair(iNMax, iBinMax);
+    }
+    for(int i = iBinMax; i > this->iHistSize*0.5; i--){
+	if(mHist.at<float>(i) < 1){
+	    iBinMax = i;
+	}
+    }
+    return make_pair(iNMax, iBinMax);
 }
 
 float breast::findWidth(const int iBinMax, const int iNMax){
-	// Find the width at the value with PEAK_VALUE/OL_WIDTH.
-	float iQuartMax = 0;
-	for(int i = iBinMax; i > 0; i--){
-		if(mHistB.at<float>(i) < iNMax/OL_WIDTH){
-			iQuartMax = i;
-			break;
-		}
+    // Find the width at the value with PEAK_VALUE/OL_WIDTH.
+    float iQuartMax = 0;
+    for(int i = iBinMax; i > 0; i--){
+	if(mHist.at<float>(i) < iNMax/OL_WIDTH){
+	    iQuartMax = i;
+	    break;
+	}
     }
     return iQuartMax;
 }
 
-std::vector<cv::Point> breast::distanceTransform(){
-    std::vector<std::vector<cv::Point>> pEdgeContours;
-	cv::findContours(mMammoThreshed,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
-	int iContSize = 0;
-	std::vector<cv::Point> pEdgeContour;
-	for(auto i:pEdgeContours){
-		if(iContSize < (int)i.size()){
-			iContSize = i.size();
-			pEdgeContour = i;
-		}
-	}
-	return pEdgeContour;
-}
 
-bool breast::leftOrRight(std::vector<cv::Point> pEdgeContour){
-    std::vector<cv::Point> pEdgeContourCopy = pEdgeContour;
+
+bool breast::leftOrRight(){
+	std::vector<cv::Point> pEdgeContourCopy = pEdgeContour;
 	sort(pEdgeContour.begin(),pEdgeContour.end(),[](const cv::Point &l, const cv::Point &r){return l.x < r.x;});
 	sort(pEdgeContourCopy.begin(),pEdgeContourCopy.end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;});
 	int iXLast = -1;
@@ -228,7 +272,7 @@ void breast::deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const 
                         mMammoThreshedCopy.at<uchar>(cv::Point(x, i.y)) = 0;
                     }
                 } else {
-                    for(int x = i.x-2; x < mMammoThreshed.cols; x++){
+                    for(int x = i.x-2; x < mMammoROI.cols; x++){
                         mMammoThreshedCopy.at<uchar>(i.y, x) = 0;
                     }
                 }
@@ -367,9 +411,9 @@ double breast::totalBreast(){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
     int counter(0);
-    for(int i = 0; i < mMammoThreshed.cols; i++){
-        for(int j = 0; j < mMammoThreshed.rows; j++){
-            if(mMammoThreshed.at<Uint8>(j,i) == 1)
+    for(int i = 0; i < mMammoROI.cols; i++){
+        for(int j = 0; j < mMammoROI.rows; j++){
+            if(mMammoROI.at<Uint8>(j,i) == 1)
                 counter++;
         }
     }
@@ -387,7 +431,7 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure){
     double tgTemp;
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
-            if(mMammoThreshed.at<Uint8>(j,i) != 0){
+            if(mMammoROI.at<Uint8>(j,i) != 0){
                 if(int(mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{

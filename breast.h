@@ -23,31 +23,26 @@ class breast: public mammography, phantomCalibration{
 	std::vector<cv::Point> vecContCents;
 	std::vector<float> vecDistBright;
 	std::vector<float> vecDistBrightBrightest;
+	void pixelVec2Mat();
+	void getBreastROI();
+	void getBreastDistMap();
+	void getBreastEdge();
+	std::pair<float, float> findHistPeak();
+	double dMaxPixelValue;
+	double dMinPixelValue;
+	int iHistSize = 512;
     public:
-	std::string strFileName;
 	cv::Mat mMammo;
-	cv::Mat mHistB;
-	cv::Mat mMammoThreshed;
+	cv::Mat mHist;
+	cv::Mat mMammoROI;
 	cv::Mat mMammoDist;
 	cv::Mat mCorner;
 	cv::Mat mMammo8Bit;
-	breast(std::string t_strFileName): mammography(t_strFileName){
-	    strFileName = t_strFileName;
-	    mMammo = cv::Mat((int)this->Rows, (int)this->Columns, CV_16UC1, cv::Scalar(1));
-	    for(int i = 0; i < this->Columns; i++){
-		for(int j = 0; j < this->Rows; j++){
-		    mMammo.at<Uint16>(j,i) = this->pixelVec[i+(int)this->Columns*j];
-		}
-	    }
-	    mMammo.convertTo(mMammo8Bit, CV_8U, 1./256);
-	};
+	breast(std::string t_strFileName);
         int getBitDepth();
-        std::vector<cv::Mat> separate3channels();
-        static void drawHist(const int histSize);
-	std::pair<float, float> findPeak(const int histSize);
+        void drawHist();
         float findWidth(const int iBinMax, const int iNMax);
-        std::vector<cv::Point> distanceTransform();
-        bool leftOrRight(std::vector<cv::Point> pEdgeContour);
+        bool leftOrRight();
         float findIMax();
         std::vector<std::vector<cv::Point>> findCorners(float iDivisor, const int iMax, const int iCOLOUR_MAX);
         std::vector<cv::Point> findCornerCentre();

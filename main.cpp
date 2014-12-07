@@ -13,7 +13,6 @@ int main(int argc, char** argv){
         return -1;
     }
     string strFileName = argv[1];
-    mammography mammData(strFileName);
     /* mammData.mammography::loadHeaderData(strFileName); */
     // load data from processed DICOM file
     /* mammData.mammography::loadPixelData(strFileName); */
@@ -33,59 +32,41 @@ int main(int argc, char** argv){
     #endif
 
     breast breastDat = breast(strFileName);
-   // cv::normalize(mMammo,mMammo, 0, 255);
     strFileName = breast::fileNameErase(strFileName);
     int iColourMax = breastDat.getBitDepth();
 
     //
     // SEPERATING THE BREAST FROM THE BACKGROUND
     //
-    vector<cv::Mat> bgr_planes = breastDat.separate3channels();
-    // Establish the number of bins
-	int histSize = 255;
-	// Set the ranges (for B,G,R) )
-	float range[] = {0, float(iColourMax)+1} ;
-	const float* histRange = {range};
-	// Set histogram behaviour.
-	bool uniform = true; bool accumulate = false;
-	// Compute the histogram.
-	cv::calcHist(&bgr_planes[0], 1, 0, cv::Mat(), breastDat.mHistB, 1, &histSize, &histRange, uniform, accumulate );
-    breast::drawHist(histSize);
-    pair<float, float> iNBin = breastDat.findPeak(histSize);
-    float iQuartMax = breastDat.findWidth(iNBin.second, iNBin.first);
+    int histSize = 255;
+
     //
     //FINDING THE CONTOUR WHICH THE DESRIBES THE EDGE OF THE BREAST
     //
 
 	// Threshold the image to 'cut off' the brighter peak from the histogram.
-	cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, 28, 255, 1); // You're cheating here.
-	/* cv::imwrite("test_mMammo.png", breastDat.mMammo); */
-	/* cv::threshold(breastDat.mMammo8Bit, breastDat.mMammoThreshed, double(iColourMax*(iQuartMax/histSize)), iColourMax, 1); */
 	// Deep copy.
-	cv::Mat mMammoThreshedCopy = breastDat.mMammoThreshed.clone();
+	cv::Mat mMammoThreshedCopy = breastDat.mMammoROI.clone();
     //
     // DISTANCE TRANSFORM
     //
     // Convert the threshold into greyscale to stop the distance transform complaining. Consider moving this to the start of the programme.
 	/* cv::cvtColor(breastDat.mMammoThreshed,breastDat.mMammoThreshed, cv::COLOR_BGR2GRAY); */
 	// Use a less accurate but smoother looking distance transform. More research needed here
-	cv::distanceTransform(breastDat.mMammoThreshed, breastDat.mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
+	cv::distanceTransform(breastDat.mMammoROI, breastDat.mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
     cv::Mat mMammoThreshedCont;
-	breastDat.mMammoThreshed.convertTo(mMammoThreshedCont, CV_8U, 1./256);
+	breastDat.mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
 
 	// The thresholded image gets broken here.
-	vector<cv::Point> pEdgeContour = breastDat.distanceTransform();
-
 	//
 	// FIGURE OUT WHETHER WE ARE LOOKING AT A LEFT OR RIGHT BREAST
 	//
-	vector<cv::Point> pEdgeContourCopy = pEdgeContour;
-	bool bLeft = breastDat.leftOrRight(pEdgeContour);
+	bool bLeft = breastDat.leftOrRight();
 	 //
 	 // TRY TO FIND A CORNER NEAR THE BOTTOM OF THE BREAST
 	 //
     // Make a probability map of likely corners in the mammogram.
-	cv::cornerHarris(breastDat.mMammoThreshed, breastDat.mCorner, 40, 3, 0.04);
+	cv::cornerHarris(breastDat.mMammoROI, breastDat.mCorner, 40, 3, 0.04);
 	float iMax = breastDat.findIMax();
 	// Threshold this map repeatedly until we find at least three probable regions.
     cv::Mat mCornerThresh;
@@ -136,9 +117,9 @@ int main(int argc, char** argv){
     //
     breastDat.drawImages(strFileName, distImage, mCornerThresh, mMammoThreshedCopy, histSize);
 
-    string KVP = various::ToString<OFString>(mammData.KVP);
-    string bodyThickness = various::ToString<OFString>(mammData.BodyPartThickness);
-    string Exposure = various::ToString<long>(mammData.Exposure);
+    string KVP = various::ToString<OFString>(breastDat.KVP);
+    string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);
+    string Exposure = various::ToString<long>(breastDat.Exposure);
     int thickness = atoi(bodyThickness.c_str());
     int exposure = atoi(Exposure.c_str());
     int thickArr[2];
@@ -147,8 +128,8 @@ int main(int argc, char** argv){
     thickArr[0] = divresult.quot*10;
     thickArr[1] = (divresult.quot+1)*10;
     dailyCalibration dcalib;
-    dcalib.insertFilTar(mammData);
-    dcalib.InserQcTTg(mammData, "qc.dat");
+    dcalib.insertFilTar(breastDat);
+    dcalib.InserQcTTg(breastDat, "qc.dat");
     calibData dat;
     phantomCalibration calib1;
     calib1 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[0]);
@@ -198,7 +179,7 @@ int main(int argc, char** argv){
     myfile.open ("example2.txt");
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
-            if(breastDat.mMammoThreshed.at<Uint8>(j,i) == 1){
+            if(breastDat.mMammoROI.at<Uint8>(j,i) == 1){
                 if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
