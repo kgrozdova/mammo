@@ -172,25 +172,39 @@ int main(int argc, char** argv){
     pair<double,double> coeff3;
     divresult = div(thickness,10);
     coeff3.first = (coeff1.first+coeff2.first)/2;
-    coeff3.second = coeff1.second+ yStep*divresult.rem;
+    coeff3.second = coeff1.second+yStep*divresult.rem;
     double tg(0);
     double tgTemp;
+    double refer(0);
+    double breastMaxVal;
+    for(int i = 0; i < breastDat.mMammo.cols; i++){
+        for(int j = 0; j < breastDat.mMammo.rows; j++){
+            if(breastDat.mMammoROI.at<Uint8>(j,i) != 0){
+                if(breastDat.mMammo.at<Uint16>(j,i) > refer){
+                    refer = breastDat.mMammo.at<Uint16>(j,i);
+                    breastMaxVal = breastDat.mMammo.at<Uint16>(j,i);
+                }
+            }
+        }
+    }
+    double intercept = log(breastMaxVal/double(breastDat.Exposure));
     ofstream myfile;
     myfile.open ("example2.txt");
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
-            if(breastDat.mMammoROI.at<Uint8>(j,i) == 1){
+            if(breastDat.mMammoROI.at<Uint8>(j,i) != 0){
                 if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
-                        tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                        //cout << log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure) << endl;
+                       tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-intercept)/coeff3.first;
                 }
                 if(tgTemp >= 0 && tgTemp <= thickness)
                     tg += tgTemp;
-                if(tgTemp > thickness)
-                    tg += thickness;
-                    //myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
+                if(tgTemp > thickness){
+                    tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                    if(tgTemp > thickness)
+                        tg += thickness;
+                }
                 myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
             }
         }

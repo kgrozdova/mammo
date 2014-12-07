@@ -60,8 +60,8 @@ void breast::getBreastEdge(){
     cv::Mat mMammoThreshedCont;
     this->mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
     std::vector<std::vector<cv::Point>> pEdgeContours;
-    cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
-    /* cv::findContours(this->mMammoROI,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE); */ // This works with the density calculation but ruins the thresholded image...
+    //cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
+    cv::findContours(this->mMammoROI,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
     cv::imwrite("roi.png", mMammoROI);
     cv::imwrite("dist.png", mMammoDist);
    int iContSize = 0;
