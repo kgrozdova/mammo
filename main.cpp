@@ -133,11 +133,11 @@ int main(int argc, char** argv){
     calibData dat;
     phantomCalibration calib1;
     calib1 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[0]);
-    calib1.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
+    //calib1.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
     dat["lower"] = calib1;
     phantomCalibration calib2;
     calib2 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[1]);
-    calib2.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
+    //calib2.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
     dat["higher"] = calib2;
     //int tg = breast::fibrogland(breastDat.mMammo, thickness, exposure, dat);
 
@@ -214,4 +214,5 @@ int main(int argc, char** argv){
     double glandPercent = breast::glandpercent(tg, t);
     cout << glandPercent << endl;
     breastDat.thicknessMap(coeff3, exposure);
+    breastDat.thicknessMapRedVal(coeff3, exposure);
 }

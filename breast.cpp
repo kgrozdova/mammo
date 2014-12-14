@@ -449,3 +449,46 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure){
     }
     cv::imwrite("test_thickMap.png",tg);
 }
+
+void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int exposure){
+    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
+    int thickness = atoi(bodyThickness.c_str());
+    double tgTemp;
+    double maxPixValCurve = exp(coeff3.second)*exposure;
+    for(int i = 0; i < mMammo.cols; i++){
+        for(int j = 0; j < mMammo.rows; j++){
+            if(mMammoROI.at<Uint8>(j,i) != 0){
+                    if(int(mMammo.at<Uint16>(j,i)) == 0){
+                        tgTemp = thickness;
+                    } else{
+                        tgTemp = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                    }
+                    if(tgTemp >= 0 && tgTemp <= thickness){
+                        tg.at<Uint8>(j,i) = tgTemp*double(255/thickness);
+                    } else if(tgTemp > thickness){
+                        tg.at<Uint8>(j,i) = thickness*double(255/thickness);
+                    } else{
+                        tg.at<Uint8>(j,i) = 0;
+                    }
+        }
+    }
+    }
+    cv::Mat dst;
+    cvtColor(tg,dst,CV_GRAY2RGB);
+    cv::Vec3b color;
+    color.val[0] = 0;
+    color.val[1] = 0;
+    color.val[2] = 255;
+    for(int i = 0; i < mMammo.cols; i++){
+        for(int j = 0; j < mMammo.rows; j++){
+            if(mMammoROI.at<Uint8>(j,i) != 0){
+                if(int(mMammo.at<Uint16>(j,i)) > maxPixValCurve){
+                    dst.at<cv::Vec3b>(cv::Point(i,j)) = color;
+                }
+            }
+        }
+    }
+    cv::imwrite("test_thickMapRed.png",dst);
+}
+

@@ -46,7 +46,7 @@ class breast: public mammography, phantomCalibration{
         float findIMax();
         std::vector<std::vector<cv::Point>> findCorners(float iDivisor, const int iMax, const int iCOLOUR_MAX);
         std::vector<cv::Point> findCornerCentre();
-	std::pair<int, int> pickCornerCutOff(const bool bLeft);
+        std::pair<int, int> pickCornerCutOff(const bool bLeft);
         void deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const std::vector<cv::Point> pEdgeContourCopy, const int iContPosY);
         std::vector<float> getDistBright();
         std::vector<float> brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy);
@@ -56,6 +56,7 @@ class breast: public mammography, phantomCalibration{
         double totalBreast();
         static double glandpercent(const double tg, const double t);
         void thicknessMap(const std::pair<double,double> coeff3, const int exposure);
+        void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 };
 
 
