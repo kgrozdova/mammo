@@ -50,6 +50,20 @@ void breast::getBreastROI(){
     int iPeakVal8Bit = iPeakVal/256;
     /* cv::Mat mMammoROICopy = this->mMammoROI.clone(); */
     cv::threshold(this->mMammo8Bit, this->mMammoROI, iPeakVal8Bit, 255, 1);
+
+
+    // Calculate the average intensity of the background
+    int iBackgroundSize = 0;
+    for(int i = 0; i < mMammoROI.cols; i++){
+	for(int j = 0; j < mMammoROI.rows; j++){
+	    if(mMammoROI.at<uchar>(j,i) == 0){
+		dMeanBackgroundValue += mMammo.at<Uint16>(j,i);	
+		iBackgroundSize++;
+	    }
+	}
+    }
+    dMeanBackgroundValue/=iBackgroundSize;
+
 }
 
 void breast::getBreastDistMap(){
@@ -66,10 +80,7 @@ void breast::getBreastEdge(){
     // Use .clone of ROI as this function would otherwise write to ROI.
     cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
     
-    imwrite("roi2.png", mMammoROI);
-    cv::imwrite("roi.png", mMammoROI);
-    cv::imwrite("dist.png", mMammoDist);
-   int iContSize = 0;
+    int iContSize = 0;
     for(auto i:pEdgeContours){
 	if(iContSize < (int)i.size()){
 	    iContSize = i.size();
@@ -285,13 +296,12 @@ void breast::deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const 
     }
 }
 
-std::vector<float> breast::getDistBright(){
+std::vector<float> breast::getDistBright(){ // Find the average brightness of pixels a certain distance from the breast
     std::vector<int> vecDistAv; // Number of pixels at distance from black.
     cv::Mat_<int> mMammoDistChar = mMammoDist;
     vecDistBright.resize(256);
     vecDistAv.resize(256);
     cv::Mat mMammoCopy = mMammo8Bit;
-    /* cv::cvtColor(mMammo, mMammoCopy, cv::COLOR_BGR2GRAY); */
     for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}
     for(int i = 0; i < mMammo.cols; i++){
@@ -305,7 +315,7 @@ std::vector<float> breast::getDistBright(){
     return vecDistBright;
 }
 
-std::vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){
+std::vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){ // Find the average brightness of the brightest half of pixels at a certain distance from the breast
     std::vector<int> vecDistAvBrightest; // Number of pixels at distance from black.
     vecDistBrightBrightest.resize(256);
     vecDistAvBrightest.resize(256);

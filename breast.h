@@ -15,6 +15,8 @@
 
 class breast: public mammography, phantomCalibration{
     private:
+	
+	// Containers
 	double breastVol, fibroVol;
 	int iColourMAX;
 	std::vector<cv::Mat> bgr_planes;
@@ -23,21 +25,29 @@ class breast: public mammography, phantomCalibration{
 	std::vector<cv::Point> vecContCents;
 	std::vector<float> vecDistBright;
 	std::vector<float> vecDistBrightBrightest;
+	double dMaxPixelValue;
+	double dMinPixelValue;
+	int iHistSize = 512;
+
+	// Functions
 	void pixelVec2Mat();
 	void getBreastROI();
 	void getBreastDistMap();
 	void getBreastEdge();
 	std::pair<float, float> findHistPeak();
-	double dMaxPixelValue;
-	double dMinPixelValue;
-	int iHistSize = 512;
+
     public:
+
+	// Containers
 	cv::Mat mMammo;
 	cv::Mat mHist;
 	cv::Mat mMammoROI;
 	cv::Mat mMammoDist;
 	cv::Mat mCorner;
 	cv::Mat mMammo8Bit;
+	Uint32 dMeanBackgroundValue = 0;
+
+	// Functions
 	breast(std::string t_strFileName);
         int getBitDepth();
         void drawHist();
@@ -57,6 +67,7 @@ class breast: public mammography, phantomCalibration{
         static double glandpercent(const double tg, const double t);
         void thicknessMap(const std::pair<double,double> coeff3, const int exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
+
 };
 
 

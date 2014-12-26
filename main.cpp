@@ -63,7 +63,7 @@ int main(int argc, char** argv){
 	//
 	// FIGURE OUT WHETHER WE ARE LOOKING AT A LEFT OR RIGHT BREAST
 	//
-	bool bLeft = breastDat.leftOrRight();
+	/* bool bLeft = breastDat.leftOrRight(); */
 	 //
 	 // TRY TO FIND A CORNER NEAR THE BOTTOM OF THE BREAST
 	 //
@@ -83,7 +83,7 @@ int main(int argc, char** argv){
     vector<cv::Point> vecContCents = breastDat.findCornerCentre();
 
     // Pick a corner to cut off.
-    pair<int, int> iContPos = breastDat.pickCornerCutOff(bLeft);
+    /* pair<int, int> iContPos = breastDat.pickCornerCutOff(bLeft); */
 
     //
     // PAINT OVER UNINTERESTING PARTS OF THE BREAST ON THE THRESHOLDED IMAGE
@@ -106,12 +106,23 @@ int main(int argc, char** argv){
     cv::Mat_<int> mMammoDistChar = breastDat.mMammoDist;
     cv::Mat mMammoCopy;
     vector<float> vecDistBrightBrightest = breastDat.brestThickness(histSize, mMammoDistChar, mMammoCopy);
+    /* cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat()); */
+    for(auto &i:vecDistBrightBrightest){
+	i = i*256*256;
+	i = log(i/breastDat.dMeanBackgroundValue);
+    }
+    cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
+    
+    for(auto &i:vecDistBrightBrightest){
+	i = 256 - i;
+    }
     int bin_w = cvRound(double(dist_w/histSize));
-    for(int i = 1; i < histSize; i++){
+    for(int i = 0; i < histSize; i++){
 	    line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])) ,
 					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
 					    cv::Scalar(255, 255, 255), 2, 8, 0);
     }
+    
     /* cv::imwrite("test_dist.png", distImage ); */
 
     //
