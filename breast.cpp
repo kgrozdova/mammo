@@ -61,7 +61,12 @@ void breast::getBreastEdge(){
     this->mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
     std::vector<std::vector<cv::Point>> pEdgeContours;
     //cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
-    cv::findContours(this->mMammoROI,pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
+
+
+    // Use .clone of ROI as this function would otherwise write to ROI.
+    cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
+    
+    imwrite("roi2.png", mMammoROI);
     cv::imwrite("roi.png", mMammoROI);
     cv::imwrite("dist.png", mMammoDist);
    int iContSize = 0;
@@ -413,7 +418,8 @@ double breast::totalBreast(){
     int counter(0);
     for(int i = 0; i < mMammoROI.cols; i++){
         for(int j = 0; j < mMammoROI.rows; j++){
-            if(mMammoROI.at<Uint8>(j,i) == 1)
+	    // This used to be " == 1" - I don't understand why?
+            if(mMammoROI.at<Uint8>(j,i) != 0)
                 counter++;
         }
     }

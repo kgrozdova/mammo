@@ -59,7 +59,6 @@ int main(int argc, char** argv){
 	/* cv::distanceTransform(breastDat.mMammoROI, breastDat.mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F); */
 	cv::Mat mMammoThreshedCont;
 	breastDat.mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
-
 	// The thresholded image gets broken here.
 	//
 	// FIGURE OUT WHETHER WE ARE LOOKING AT A LEFT OR RIGHT BREAST
