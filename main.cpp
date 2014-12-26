@@ -53,8 +53,11 @@ int main(int argc, char** argv){
     // Convert the threshold into greyscale to stop the distance transform complaining. Consider moving this to the start of the programme.
 	/* cv::cvtColor(breastDat.mMammoThreshed,breastDat.mMammoThreshed, cv::COLOR_BGR2GRAY); */
 	// Use a less accurate but smoother looking distance transform. More research needed here
-	cv::distanceTransform(breastDat.mMammoROI, breastDat.mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F);
-    cv::Mat mMammoThreshedCont;
+
+    // This line breaks the distance transform.
+    // I'm pretty sure we don't need it...
+	/* cv::distanceTransform(breastDat.mMammoROI, breastDat.mMammoDist, cv::DIST_L2, cv::DIST_MASK_PRECISE, CV_32F); */
+	cv::Mat mMammoThreshedCont;
 	breastDat.mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
 
 	// The thresholded image gets broken here.
@@ -69,7 +72,7 @@ int main(int argc, char** argv){
 	cv::cornerHarris(breastDat.mMammoROI, breastDat.mCorner, 40, 3, 0.04);
 	float iMax = breastDat.findIMax();
 	// Threshold this map repeatedly until we find at least three probable regions.
-    cv::Mat mCornerThresh;
+	cv::Mat mCornerThresh;
 	float iDivisor = 1.25;
 	vector<vector<cv::Point>> pContours = breastDat.findCorners(iDivisor, iMax, iColourMax);
 		// Find the most spatially spread out corner. Unused, currently - what does it mean?
