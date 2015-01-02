@@ -17,7 +17,7 @@ class breast: public mammography, phantomCalibration{
     private:
 	
 	// Containers
-	double breastVol, fibroVol;
+	/* double breastVol, fibroVol; */
 	int iColourMAX;
 	std::vector<cv::Mat> bgr_planes;
 	std::vector<cv::Point> pEdgeContour;
@@ -27,11 +27,13 @@ class breast: public mammography, phantomCalibration{
 	std::vector<float> vecDistBrightBrightest;
 	double dMaxPixelValue;
 	double dMinPixelValue;
+	bool bLeft;
 	int iHistSize = 512;
 
 	// Functions
 	void pixelVec2Mat();
 	void getBreastROI();
+	void getBreastBottom();
 	void getBreastDistMap();
 	void getBreastEdge();
 	std::pair<float, float> findHistPeak();
@@ -53,7 +55,6 @@ class breast: public mammography, phantomCalibration{
         void drawHist();
         float findWidth(const int iBinMax, const int iNMax);
         bool leftOrRight();
-        float findIMax();
         std::vector<std::vector<cv::Point>> findCorners(float iDivisor, const int iMax, const int iCOLOUR_MAX);
         std::vector<cv::Point> findCornerCentre();
         std::pair<int, int> pickCornerCutOff(const bool bLeft);

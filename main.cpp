@@ -69,18 +69,18 @@ int main(int argc, char** argv){
 	 //
     // Make a probability map of likely corners in the mammogram.
 	cv::cornerHarris(breastDat.mMammoROI, breastDat.mCorner, 40, 3, 0.04);
-	float iMax = breastDat.findIMax();
+	/* float iMax = breastDat.findIMax(); */
 	// Threshold this map repeatedly until we find at least three probable regions.
 	cv::Mat mCornerThresh;
 	float iDivisor = 1.25;
-	vector<vector<cv::Point>> pContours = breastDat.findCorners(iDivisor, iMax, iColourMax);
+	/* vector<vector<cv::Point>> pContours = breastDat.findCorners(iDivisor, iMax, iColourMax); */
 		// Find the most spatially spread out corner. Unused, currently - what does it mean?
-	sort(pContours.begin(),pContours.end(),[]
-		(const vector<cv::Point> &l, const vector<cv::Point> &r){
-			return cv::contourArea(l) > cv::contourArea(r);
-		});
+	/* sort(pContours.begin(),pContours.end(),[] */
+	/* 	(const vector<cv::Point> &l, const vector<cv::Point> &r){ */
+	/* 		return cv::contourArea(l) > cv::contourArea(r); */
+	/* 	}); */
     // Find the centers of the corners.
-    vector<cv::Point> vecContCents = breastDat.findCornerCentre();
+    /* vector<cv::Point> vecContCents = breastDat.findCornerCentre(); */
 
     // Pick a corner to cut off.
     /* pair<int, int> iContPos = breastDat.pickCornerCutOff(bLeft); */

@@ -19,6 +19,12 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
     this->getBreastROI();
     this->getBreastDistMap();
     this->getBreastEdge();
+    this->leftOrRight();    // Needs to go after getBreastEdge
+			    // We need to replace all these things with
+			    // functions that automatically calculate
+			    // the things they need when the are first
+			    // accessed
+    this->getBreastBottom();
 }
 
 void breast::pixelVec2Mat(){
@@ -88,6 +94,7 @@ void breast::getBreastEdge(){
 	}
     }
 }
+
 int breast::getBitDepth(){
     // Find bit depth of image and store white value.
     switch(mMammo.depth()){
@@ -113,6 +120,41 @@ int breast::getBitDepth(){
     }
 
     return this->iColourMAX;
+}
+
+void breast::getBreastBottom(){
+    cv::cornerHarris(this->mMammoROI, this->mCorner, 10, 1, 0.01); // This used to work - now it doesn't seem to pick corners out at all.
+    cv::Mat mCornerThresh;
+    /* float iDivisor = 1.24; */
+    float iDivisor = 1;
+    double iMax,iMin;
+    cv::minMaxLoc(mCorner, &iMin, &iMax);
+    int iColourMax = this->getBitDepth();
+    vector<vector<cv::Point>> pContours = this->findCorners(iDivisor, iMax, iColourMax);
+    /* for (auto &i:pContours) { */
+	/* cout << i[0] << "\t"; */
+    /* } */
+    /* cout << endl; */
+    vector<cv::Point> vecContCents = this->findCornerCentre();
+    /* for (auto &i:vecContCents){ */
+	/* cout << i << "\t"; */
+    /* } */
+    /* cout << endl << endl; */
+    pair<int, int> iContPos = this->pickCornerCutOff(bLeft);
+    /* cout << iContPos.first << "\t" << iContPos.second << endl; */
+    cv::Mat mMammoROITest = mMammoROI.clone();
+    /* this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPos.second); */
+    for(auto &i:vecContCents){
+	/* mMammoROITest.at<uchar>(i) = 100; */
+	cv::circle(mMammoROITest, i, 10, 50, -1);
+    }
+    cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
+    /*
+     *
+     *  NEED TO TRANSFER ALL THESE FUNCTIONS TO OOO ONES, AND MAKE IT WORK...
+     *
+     *
+     */
 }
 
 void breast::drawHist(){
@@ -193,27 +235,8 @@ bool breast::leftOrRight(){
 			i2LastGap = iCurrGap;
 		}
 	}
-	bool bLeft = iTotalGap < 0;
+	this->bLeft = iTotalGap < 0;
 	return bLeft;
-}
-
-float breast::findIMax(){
-	float iMax = 0;
-	float iiMax = 0;
-	float ijMax = 0;
-	for(int i = 0; i < mCorner.cols; i++){
-		for(int j = 0; j < mCorner.rows; j++){
-			if (mCorner.at<float>(i,j) != 0){
-				//iMax = std::max(iMax,mCorner.at<float>(i,j));
-				if (iMax < mCorner.at<float>(i,j)){
-					iMax = mCorner.at<float>(i,j);
-					iiMax = i;
-					ijMax = j;
-				}
-			}
-		}
-	}
-	return iMax;
 }
 
 std::vector<std::vector<cv::Point>> breast::findCorners(float iDivisor, const int iMax, const int iCOLOUR_MAX){
@@ -223,18 +246,20 @@ std::vector<std::vector<cv::Point>> breast::findCorners(float iDivisor, const in
 		cv::threshold(mCorner,mCornerThresh,iMax/iDivisor,iCOLOUR_MAX,0);
 		cv::Mat mCornerT8U;
 		mCornerThresh.convertTo(mCornerT8U, CV_8U);
-		cv::findContours(mCornerT8U,pContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE);
+		cv::findContours(mCornerT8U,pContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE); // This seems to yield many, many contours regardless of threshold.
 		iCorners = pContours.size();
+		/* cout << iCorners << "\t"; */
 		iDivisor+=0.05;
 
 	} while ((iCorners < 5) && (iDivisor < 10));
+	/* cout << endl; */
         return pContours;
 }
 
 std::vector<cv::Point> breast::findCornerCentre(){
-	for(auto i:pContours){
+	for(auto &i:pContours){
 		cv::Moments momCont = cv::moments(i);
-		vecContCents.push_back(cv::Point(momCont.m10/momCont.m00,momCont.m01/momCont.m00));
+		if (momCont.m00 > 0) vecContCents.push_back(cv::Point(momCont.m10/momCont.m00,momCont.m01/momCont.m00));
 	}
 	return vecContCents;
 }
