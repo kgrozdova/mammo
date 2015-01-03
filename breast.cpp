@@ -34,7 +34,9 @@ void breast::pixelVec2Mat(){
 	    this->mMammo.at<Uint16>(j,i) = this->pixelVec[i+(int)this->Columns*j];
 	}
     }
-    this->mMammo.convertTo(mMammo8Bit, CV_8U, 1./256);
+    cv::normalize(mMammo,mMammoNorm,0,65536, cv::NORM_MINMAX, -1, cv::Mat()); // NB: absolute pixel values meaningless in norm'd images
+    this->mMammo.convertTo(mMammo8Bit, CV_8U, 1./256); // Leaves pixel values proportional to 16 bit / 8 bit but loses a lot of resolution
+    this->mMammoNorm.convertTo(mMammo8BitNorm, CV_8U, 1./256); 
     this->pixelVec.clear();
     this->getBitDepth();
 }
@@ -149,6 +151,7 @@ void breast::getBreastBottom(){
 	cv::circle(mMammoROITest, i, 10, 50, -1);
     }
     cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
+    cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
     /*
      *
      *  NEED TO TRANSFER ALL THESE FUNCTIONS TO OOO ONES, AND MAKE IT WORK...
@@ -326,7 +329,7 @@ std::vector<float> breast::getDistBright(){ // Find the average brightness of pi
     cv::Mat_<int> mMammoDistChar = mMammoDist;
     vecDistBright.resize(256);
     vecDistAv.resize(256);
-    cv::Mat mMammoCopy = mMammo8Bit;
+    cv::Mat mMammoCopy = mMammo8BitNorm;
     for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}
     for(int i = 0; i < mMammo.cols; i++){
@@ -347,10 +350,10 @@ std::vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int
     for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){ vecDistBrightBrightest[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAvBrightest.size(); ++i){ vecDistAvBrightest[i] = 0;}
     for(int i = 0; i < mMammo8Bit.cols; i++){
-        for(int j = 0; j < mMammo8Bit.rows; j++){
+        for(int j = 0; j < mMammo8BitNorm.rows; j++){
             int iDist = int(mMammoDistChar(j,i));
-            if(int(mMammo8Bit.at<uchar>(j,i)) >= vecDistBright[iDist]){
-            vecDistBrightBrightest[iDist]+=float(mMammo8Bit.at<uchar>(j,i));
+            if(int(mMammo8BitNorm.at<uchar>(j,i)) >= vecDistBright[iDist]){
+            vecDistBrightBrightest[iDist]+=float(mMammo8BitNorm.at<uchar>(j,i));
             vecDistAvBrightest[iDist]++;}
         }
     }

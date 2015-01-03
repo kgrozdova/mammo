@@ -42,11 +42,13 @@ class breast: public mammography, phantomCalibration{
 
 	// Containers
 	cv::Mat mMammo;
+	cv::Mat mMammoNorm;
 	cv::Mat mHist;
 	cv::Mat mMammoROI;
 	cv::Mat mMammoDist;
 	cv::Mat mCorner;
 	cv::Mat mMammo8Bit;
+	cv::Mat mMammo8BitNorm;
 	Uint32 dMeanBackgroundValue = 0;
 
 	// Functions

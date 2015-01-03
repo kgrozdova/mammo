@@ -33,7 +33,7 @@ int main(int argc, char** argv){
 
     breast breastDat = breast(strFileName);
     strFileName = breast::fileNameErase(strFileName);
-    int iColourMax = breastDat.getBitDepth();
+    /* int iColourMax = breastDat.getBitDepth(); */
 
     //
     // SEPERATING THE BREAST FROM THE BACKGROUND
@@ -72,7 +72,7 @@ int main(int argc, char** argv){
 	/* float iMax = breastDat.findIMax(); */
 	// Threshold this map repeatedly until we find at least three probable regions.
 	cv::Mat mCornerThresh;
-	float iDivisor = 1.25;
+	/* float iDivisor = 1.25; */
 	/* vector<vector<cv::Point>> pContours = breastDat.findCorners(iDivisor, iMax, iColourMax); */
 		// Find the most spatially spread out corner. Unused, currently - what does it mean?
 	/* sort(pContours.begin(),pContours.end(),[] */
@@ -117,10 +117,10 @@ int main(int argc, char** argv){
 	i = 256 - i;
     }
     int bin_w = cvRound(double(dist_w/histSize));
-    for(int i = 0; i < histSize; i++){
-	    line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])) ,
+    for(int i = 1; i < histSize; i++){
+	    line(distImage, cv::Point(bin_w*(i-1), dist_h - cvRound(vecDistBrightBrightest[i-1])) ,
 					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
-					    cv::Scalar(255, 255, 255), 2, 8, 0);
+					    cv::Scalar(255, 255, 255), 1, 8, 0);
     }
     
     /* cv::imwrite("test_dist.png", distImage ); */
