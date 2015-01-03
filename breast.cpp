@@ -142,7 +142,7 @@ void breast::getBreastBottom(){
 	/* cout << i << "\t"; */
     /* } */
     /* cout << endl << endl; */
-    pair<int, int> iContPos = this->pickCornerCutOff(bLeft);
+    /* pair<int, int> iContPos = this->pickCornerCutOff(bLeft); */
     /* cout << iContPos.first << "\t" << iContPos.second << endl; */
     cv::Mat mMammoROITest = mMammoROI.clone();
     /* this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPos.second); */
@@ -326,12 +326,13 @@ void breast::deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const 
 
 std::vector<float> breast::getDistBright(){ // Find the average brightness of pixels a certain distance from the breast
     std::vector<int> vecDistAv; // Number of pixels at distance from black.
-    cv::Mat_<int> mMammoDistChar = mMammoDist;
+    cv::Mat_<uchar> mMammoDistChar = mMammoDist; // At one point this was a matrix of ints - don't know why.
     vecDistBright.resize(256);
     vecDistAv.resize(256);
     cv::Mat mMammoCopy = mMammo8BitNorm;
-    for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}
-    for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}
+    for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}	// Initialise vectors
+    for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}			// ...continued. 
+
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
             int iDist = int(mMammoDistChar(j,i));
@@ -339,27 +340,43 @@ std::vector<float> breast::getDistBright(){ // Find the average brightness of pi
             vecDistAv[iDist]++;
         }
     }
+
     for(int i = 0; i < (int)vecDistBright.size(); ++i){ if(vecDistAv[i] != 0){vecDistBright[i]/= float(vecDistAv[i]);}}
     return vecDistBright;
 }
 
 std::vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){ // Find the average brightness of the brightest half of pixels at a certain distance from the breast
     std::vector<int> vecDistAvBrightest; // Number of pixels at distance from black.
-    vecDistBrightBrightest.resize(256);
+    this->vecDistBrightBrightest.resize(256);
     vecDistAvBrightest.resize(256);
+
+
+    // This could well be the problem - need to find a more sensible way of sorting out duff values; maybe not all of vector is populated?
     for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){ vecDistBrightBrightest[i] = uchar(0);}
     for(int i = 0; i < (int)vecDistAvBrightest.size(); ++i){ vecDistAvBrightest[i] = 0;}
+
+
+    // Find the total brightness of the brightest half of pixels at each distance.
     for(int i = 0; i < mMammo8Bit.cols; i++){
         for(int j = 0; j < mMammo8BitNorm.rows; j++){
             int iDist = int(mMammoDistChar(j,i));
-            if(int(mMammo8BitNorm.at<uchar>(j,i)) >= vecDistBright[iDist]){
+            if(int(mMammo8BitNorm.at<uchar>(j,i)) >= this->vecDistBright[iDist]){
             vecDistBrightBrightest[iDist]+=float(mMammo8BitNorm.at<uchar>(j,i));
             vecDistAvBrightest[iDist]++;}
         }
     }
-    for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){ if(vecDistAvBrightest[i] != 0){vecDistBrightBrightest[i]/= float(vecDistAvBrightest[i]);}}
+
+    // Find the average brightness by dividing the total brightness by the number of pixels.
+    for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){
+	if(vecDistAvBrightest[i] != 0){
+	    vecDistBrightBrightest[i]/= float(vecDistAvBrightest[i]);
+	}
+    }
     return vecDistBrightBrightest;
 }
+
+
+// What the dickens is this? It appears to be unused.
 std::vector<float> breast::normalBreastThickness(std::vector<float> vecDistBrightBrightest, const cv::Mat distImage){
     // Normalize the result to [ 0, histImage.rows ].
     vecDistBrightBrightest[255]=0;

@@ -107,6 +107,21 @@ int main(int argc, char** argv){
     cv::Mat mMammoCopy;
     vector<float> vecDistBrightBrightest = breastDat.brestThickness(histSize, mMammoDistChar, mMammoCopy);
     /* cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat()); */
+
+
+    //
+    //
+    //	    THIS IS A BODGE - NEED TO DEAL MORE CLEVERLY
+    //	    WITH ODD VALUES IN THIS VECTOR
+    //
+    //
+    //
+    
+    for(int i = 1; i < vecDistBrightBrightest.size(); i++){
+	if(vecDistBrightBrightest[i-1] == 0){
+	    vecDistBrightBrightest[i-1] = vecDistBrightBrightest[i];
+	}
+    }
     for(auto &i:vecDistBrightBrightest){
 	i = i*256*256;
 	i = log(i/breastDat.dMeanBackgroundValue);
