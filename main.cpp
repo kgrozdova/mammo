@@ -116,7 +116,7 @@ int main(int argc, char** argv){
     //
     //
     //
-    
+
     for(int i = 1; i < vecDistBrightBrightest.size(); i++){
 	if(vecDistBrightBrightest[i-1] == 0){
 	    vecDistBrightBrightest[i-1] = vecDistBrightBrightest[i];
@@ -127,7 +127,7 @@ int main(int argc, char** argv){
 	i = log(i/breastDat.dMeanBackgroundValue);
     }
     cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
-    
+
     for(auto &i:vecDistBrightBrightest){
 	i = 256 - i;
     }
@@ -137,7 +137,7 @@ int main(int argc, char** argv){
 					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
 					    cv::Scalar(255, 255, 255), 1, 8, 0);
     }
-    
+
     /* cv::imwrite("test_dist.png", distImage ); */
 
     //
@@ -161,11 +161,11 @@ int main(int argc, char** argv){
     calibData dat;
     phantomCalibration calib1;
     calib1 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[0]);
-    //calib1.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
+    calib1.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
     dat["lower"] = calib1;
     phantomCalibration calib2;
     calib2 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[1]);
-    //calib2.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
+    calib2.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
     dat["higher"] = calib2;
     //int tg = breast::fibrogland(breastDat.mMammo, thickness, exposure, dat);
 
@@ -224,14 +224,14 @@ int main(int argc, char** argv){
                 if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
-                       tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-intercept)/coeff3.first;
+                       tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
                 }
-                if(tgTemp >= 0 && tgTemp <= thickness)
+                if(tgTemp >= 0 && tgTemp <= thickness){
                     tg += tgTemp;
-                if(tgTemp > thickness){
-                    tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                    if(tgTemp > thickness)
-                        tg += thickness;
+                }else if(tgTemp > thickness){
+                    tg += thickness;
+                } else{
+                    tg += 0;
                 }
                 myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
             }

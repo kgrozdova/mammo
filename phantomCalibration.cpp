@@ -15,6 +15,7 @@ phantomCalibration phantomCalibration::getThicknessData(const string filTar, con
     string strT = various::ToString<int>(t);
     string fileName = "av_calib_data" + filTar + kVStr + "_" + strT + ".csv";
     ifs.open(fileName, ifstream::in);
+    cout << fileName << endl;
     while (ifs.good()){
         getline(ifs, str);
         if( ifs.eof() ) break;
@@ -38,18 +39,50 @@ void phantomCalibration::applyShift(const double shift){
 }
 
 void phantomCalibration::dataCorrection(const double x0, const double y0, const int kV, const string filTar, const int t){
-    phantomCalibration calibrationData;
-    calibrationData = phantomCalibration::getThicknessData(filTar, kV, t);
+    int thickArr[2];
+    div_t divresult;
+    divresult = div(t,10);
+    thickArr[0] = divresult.quot*10;
+    thickArr[1] = (divresult.quot+1)*10;
+    calibData dat;
+    phantomCalibration calib1;
+    calib1 = phantomCalibration::getThicknessData(filTar, kV, thickArr[0]);
+    dat["lower"] = calib1;
+    phantomCalibration calib2;
+    calib2 = phantomCalibration::getThicknessData(filTar, kV, thickArr[1]);
+    dat["higher"] = calib2;
+    phantomCalibration temp1 = dat["lower"];
+    int sizeArr = temp1.dataArr.size();
+    double x1[temp1.dataArr.size()];
+    double y1[temp1.dataArr.size()];
     size_t var = 0;
-    double x[calibrationData.dataArr.size()];
-    double y[calibrationData.dataArr.size()];
-    for(auto it:calibrationData.dataArr){
-        x[var] = it.first;
-        y[var] = it.second;
+    for(auto it:temp1.dataArr){
+        x1[var] = it.first;
+        y1[var] = it.second;
         var++;
     }
-    pair<double,double> ret = scanner::linearfit(x,y,(sizeof(x)/sizeof(*x)));
-    double shift = scanner::calcShift(ret, x0, y0);
+    pair<double,double> coeff1 = scanner::linearfit(x1,y1,var);
+    phantomCalibration temp2 = dat["higher"];
+    sizeArr = temp2.dataArr.size();
+    double x2[temp2.dataArr.size()];
+    double y2[temp2.dataArr.size()];
+    var = 0;
+    for(auto it:temp2.dataArr){
+        x2[var] = it.first;
+        y2[var] = it.second;
+        var++;
+    }
+    pair<double,double> coeff2 = scanner::linearfit(x2,y2,var);
+    double yStep;
+    if((coeff2.second - coeff1.second) == 0){
+        yStep = 0;
+    } else{
+        yStep = (coeff2.second - coeff1.second)/10;
+    }
+    pair<double,double> coeff3;
+    divresult = div(t,10);
+    coeff3.first = (coeff1.first+coeff2.first)/2;
+    coeff3.second = coeff1.second+yStep*divresult.rem;
+    double shift = scanner::calcShift(coeff3, x0, y0);
     this->applyShift(shift);
-    various::iterateVectorToFile(calibrationData.dataArr, "example3.txt");
 }
