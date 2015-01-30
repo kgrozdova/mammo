@@ -49,6 +49,7 @@ class breast: public mammography, phantomCalibration{
 	cv::Mat mCorner;
 	cv::Mat mMammo8Bit;
 	cv::Mat mMammo8BitNorm;
+	cv::Mat mMammoDistImage;
 	Uint32 dMeanBackgroundValue = 0;
 
 	// Functions
@@ -61,9 +62,6 @@ class breast: public mammography, phantomCalibration{
         std::vector<cv::Point> findCornerCentre();
         std::pair<int, int> pickCornerCutOff(const bool bLeft);
         void deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const std::vector<cv::Point> pEdgeContourCopy, const int iContPosY);
-        std::vector<float> getDistBright();
-        std::vector<float> brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy);
-        static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
         void drawImages(std::string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize);
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
         double totalBreast();
@@ -71,6 +69,14 @@ class breast: public mammography, phantomCalibration{
         void thicknessMap(const std::pair<double,double> coeff3, const int exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 
+	// THICKNESS RELATED STUFF
+        std::vector<float> getDistBright();
+        std::vector<float> breastThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy);
+	void getRadialThickness();
+
+
+	// DEPRECATED STUFF?
+        static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
 };
 
 

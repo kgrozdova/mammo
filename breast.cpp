@@ -345,7 +345,7 @@ std::vector<float> breast::getDistBright(){ // Find the average brightness of pi
     return vecDistBright;
 }
 
-std::vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){ // Find the average brightness of the brightest half of pixels at a certain distance from the breast
+std::vector<float> breast::breastThickness(const int histSize, const cv::Mat_<int> mMammoDistChar, const cv::Mat mMammoCopy){ // Find the average brightness of the brightest half of pixels at a certain distance from the breast
     std::vector<int> vecDistAvBrightest; // Number of pixels at distance from black.
     this->vecDistBrightBrightest.resize(256);
     vecDistAvBrightest.resize(256);
@@ -375,6 +375,37 @@ std::vector<float> breast::brestThickness(const int histSize, const cv::Mat_<int
     return vecDistBrightBrightest;
 }
 
+// It would be a very good idea to make this into a more general thing, i.e stop hard coding bin sizes....
+void breast::getRadialThickness(){
+    cv::normalize(this->mMammoDist, this->mMammoDist, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
+    vector<float> vecDistBright = this->getDistBright();
+    int dist_w = 255*2; int dist_h = 256;
+    cv::Mat distImage(dist_h, dist_w, CV_8UC1, cv::Scalar(0));
+    cv::Mat_<int> mMammoDistChar = this->mMammoDist;
+    cv::Mat mMammoCopy;
+    vector<float> vecDistBrightBrightest = this->breastThickness(histSize, mMammoDistChar, mMammoCopy);
+    for(int i = 1; i < vecDistBrightBrightest.size(); i++){
+	if(vecDistBrightBrightest[i-1] == 0){
+	    vecDistBrightBrightest[i-1] = vecDistBrightBrightest[i];
+	}
+    }
+    for(auto &i:vecDistBrightBrightest){
+	i = i*256*256;
+	i = log(i/this->dMeanBackgroundValue);
+    }
+    cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
+
+    for(auto &i:vecDistBrightBrightest){
+	i = 256 - i;
+    }
+    int bin_w = cvRound(double(dist_w/histSize));
+    for(int i = 1; i < histSize; i++){
+	    line(distImage, cv::Point(bin_w*(i-1), dist_h - cvRound(vecDistBrightBrightest[i-1])) ,
+					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
+					    cv::Scalar(255, 255, 255), 1, 8, 0);
+    }
+    this->mMammoDistImage = distImage;
+}
 
 // What the dickens is this? It appears to be unused.
 std::vector<float> breast::normalBreastThickness(std::vector<float> vecDistBrightBrightest, const cv::Mat distImage){

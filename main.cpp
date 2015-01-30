@@ -105,7 +105,7 @@ int main(int argc, char** argv){
     cv::Mat distImage(dist_h, dist_w, CV_8UC1, cv::Scalar(0));
     cv::Mat_<int> mMammoDistChar = breastDat.mMammoDist;
     cv::Mat mMammoCopy;
-    vector<float> vecDistBrightBrightest = breastDat.brestThickness(histSize, mMammoDistChar, mMammoCopy);
+    vector<float> vecDistBrightBrightest = breastDat.breastThickness(histSize, mMammoDistChar, mMammoCopy);
     /* cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat()); */
 
 
@@ -215,7 +215,7 @@ int main(int argc, char** argv){
             }
         }
     }
-    double intercept = log(breastMaxVal/double(breastDat.Exposure));
+    /* double intercept = log(breastMaxVal/double(breastDat.Exposure)); */
     ofstream myfile;
     myfile.open ("example2.txt");
     for(int i = 0; i < breastDat.mMammo.cols; i++){
