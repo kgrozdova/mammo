@@ -98,52 +98,11 @@ int main(int argc, char** argv){
     //
     //	    This is dangerous... we're losing information here. 32 bit -> 8 bits = 16 million times less resolution...
     //		We desperately need to look at our classes etc. and make it saner...
-    //
-    cv::normalize(breastDat.mMammoDist, breastDat.mMammoDist, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
-    vector<float> vecDistBright = breastDat.getDistBright();
-    int dist_w = histSize*2; int dist_h = 256;
-    cv::Mat distImage(dist_h, dist_w, CV_8UC1, cv::Scalar(0));
-    cv::Mat_<int> mMammoDistChar = breastDat.mMammoDist;
-    cv::Mat mMammoCopy;
-    vector<float> vecDistBrightBrightest = breastDat.breastThickness(histSize, mMammoDistChar, mMammoCopy);
-    /* cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat()); */
-
-
-    //
-    //
-    //	    THIS IS A BODGE - NEED TO DEAL MORE CLEVERLY
-    //	    WITH ODD VALUES IN THIS VECTOR
-    //
-    //
-    //
-
-    for(int i = 1; i < vecDistBrightBrightest.size(); i++){
-	if(vecDistBrightBrightest[i-1] == 0){
-	    vecDistBrightBrightest[i-1] = vecDistBrightBrightest[i];
-	}
-    }
-    for(auto &i:vecDistBrightBrightest){
-	i = i*256*256;
-	i = log(i/breastDat.dMeanBackgroundValue);
-    }
-    cv::normalize(vecDistBrightBrightest, vecDistBrightBrightest, 0, 255, cv::NORM_MINMAX, -1, cv::Mat());
-
-    for(auto &i:vecDistBrightBrightest){
-	i = 256 - i;
-    }
-    int bin_w = cvRound(double(dist_w/histSize));
-    for(int i = 1; i < histSize; i++){
-	    line(distImage, cv::Point(bin_w*(i-1), dist_h - cvRound(vecDistBrightBrightest[i-1])) ,
-					    cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
-					    cv::Scalar(255, 255, 255), 1, 8, 0);
-    }
-
-    /* cv::imwrite("test_dist.png", distImage ); */
 
     //
     // DRAWING THE PICTURES
     //
-    breastDat.drawImages(strFileName, distImage, mCornerThresh, mMammoThreshedCopy, histSize);
+    breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
 
     string KVP = various::ToString<OFString>(breastDat.KVP);
     string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);

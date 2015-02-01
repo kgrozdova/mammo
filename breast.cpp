@@ -25,6 +25,7 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
 			    // the things they need when the are first
 			    // accessed
     this->getBreastBottom();
+    this->getRadialThickness();
 }
 
 void breast::pixelVec2Mat(){
@@ -82,17 +83,27 @@ void breast::getBreastEdge(){
     cv::Mat mMammoThreshedCont;
     this->mMammoROI.convertTo(mMammoThreshedCont, CV_8U, 1./256);
     std::vector<std::vector<cv::Point>> pEdgeContours;
+    std::vector<std::vector<cv::Point>> pEdgeContoursCompressed;
     //cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
 
 
     // Use .clone of ROI as this function would otherwise write to ROI.
     cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
+    cv::findContours(this->mMammoROI.clone(),pEdgeContoursCompressed,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
 
     int iContSize = 0;
     for(auto i:pEdgeContours){
 	if(iContSize < (int)i.size()){
 	    iContSize = i.size();
 	    this->pEdgeContour = i;
+	}
+    }
+
+    iContSize = 0;
+    for(auto i:pEdgeContoursCompressed){
+	if(iContSize < (int)i.size()){
+	    iContSize = i.size();
+	    this->pEdgeContourCompressed = i;
 	}
     }
 }
@@ -146,18 +157,55 @@ void breast::getBreastBottom(){
     /* cout << iContPos.first << "\t" << iContPos.second << endl; */
     cv::Mat mMammoROITest = mMammoROI.clone();
     /* this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPos.second); */
-    for(auto &i:vecContCents){
-	/* mMammoROITest.at<uchar>(i) = 100; */
-	cv::circle(mMammoROITest, i, 10, 50, -1);
-    }
-    cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
-    cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
     /*
      *
      *  NEED TO TRANSFER ALL THESE FUNCTIONS TO OOO ONES, AND MAKE IT WORK...
      *
      *
      */
+
+    /*
+     *
+     *
+     *	CHAIN TEST FROM CONTOURS
+     *
+     *
+     */
+
+    this->pEdgeContour;
+    std::vector<cv::Point> pEdgePolyApprox;
+    cv::approxPolyDP(this->pEdgeContourCompressed, pEdgePolyApprox, 3, 0);
+
+    std::vector<double> pEdgeAngles; // The "angle" of the line between i and i-1
+    for(int i = 1; i < pEdgePolyApprox.size(); i++){
+	int x2 = pEdgePolyApprox[i].x;
+	int y2 = pEdgePolyApprox[i].y;
+	int x1 = pEdgePolyApprox[i-1].x;
+	int y1 = pEdgePolyApprox[i-1].y;
+
+	double dAngle = atan2(y2-y1,x2-x1) * 180 / CV_PI;
+	pEdgeAngles.push_back(dAngle);
+    }
+    std::vector<double> pEdgeAngleDeltas; // The change in angle between i and i-1
+    for(int i = 1; i < pEdgeAngles.size(); i++){
+	pEdgeAngleDeltas.push_back(abs(pEdgeAngles[i]-pEdgeAngles[i-1]));
+	/* cout << pEdgeAngleDeltas[i-1] << endl; */
+    }
+    // pEdgeAngleDeltas[i] = the angle of the corner at pEdgeCont...[i+1]
+
+    /* for(auto &i:pEdgePolyApprox){ */
+	/* /1* mMammoROITest.at<uchar>(i) = 100; *1/ */
+	/* cv::circle(mMammoROITest, i, 10, 50, -1); */
+    /* } */
+    for(int i = 1; i < pEdgePolyApprox.size() ; i++){
+	double iRadius = pEdgeAngleDeltas[i-1];
+	cv::Point pTemp = pEdgePolyApprox[i];
+	if( (pTemp.x > 10) && (pTemp.x < mMammo.cols - 10) && (pTemp.y > 10) && (pTemp.y < mMammo.rows - 10)) {
+	    cv::circle(mMammoROITest, pTemp, iRadius, 120, -1);
+	}
+    }
+    cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
+    cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
 }
 
 void breast::drawHist(){
@@ -417,18 +465,18 @@ std::vector<float> breast::normalBreastThickness(std::vector<float> vecDistBrigh
     return vecDistBrightBrightest;
 }
 
-void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
+void breast::drawImages(string fileName, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
     /* fileName.pop_back(); */
-    int dist_w = histSize*2;
-    int dist_h = 512;
+    /* int dist_w = histSize*2; */
+    /* int dist_h = 512; */
     #ifdef OL_DRAW_DIST
-    int bin_w = cvRound(double(dist_w/histSize));
-    for(int i = 1; i < histSize; i++){
-        line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])) ,
-                        cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])),
-                        cv::Scalar(255, 255, 255), 2, 8, 0);
-    }
-    cv::imwrite(fileName+"_dist.png", distImage );
+    /* int bin_w = cvRound(double(dist_w/histSize)); */
+    /* for(int i = 1; i < histSize; i++){ */
+    /*     line(distImage, cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])) , */
+    /*                     cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])), */
+    /*                     cv::Scalar(255, 255, 255), 2, 8, 0); */
+    /* } */
+    cv::imwrite(fileName+"_dist.png", this->mMammoDistImage );
     #endif
 
     #ifdef OL_DRAW_CORNER
