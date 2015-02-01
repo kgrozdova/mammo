@@ -15,7 +15,7 @@
 
 class breast: public mammography, phantomCalibration{
     private:
-	
+
 	// Containers
 	/* double breastVol, fibroVol; */
 	int iColourMAX;
@@ -65,7 +65,7 @@ class breast: public mammography, phantomCalibration{
         void drawImages(std::string fileName, const cv::Mat distImage, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize);
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
         double totalBreast();
-        static double glandpercent(const double tg, const double t);
+        static pair<double,double> glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t);
         void thicknessMap(const std::pair<double,double> coeff3, const int exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 

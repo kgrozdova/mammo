@@ -36,7 +36,7 @@ void breast::pixelVec2Mat(){
     }
     cv::normalize(mMammo,mMammoNorm,0,65536, cv::NORM_MINMAX, -1, cv::Mat()); // NB: absolute pixel values meaningless in norm'd images
     this->mMammo.convertTo(mMammo8Bit, CV_8U, 1./256); // Leaves pixel values proportional to 16 bit / 8 bit but loses a lot of resolution
-    this->mMammoNorm.convertTo(mMammo8BitNorm, CV_8U, 1./256); 
+    this->mMammoNorm.convertTo(mMammo8BitNorm, CV_8U, 1./256);
     this->pixelVec.clear();
     this->getBitDepth();
 }
@@ -65,7 +65,7 @@ void breast::getBreastROI(){
     for(int i = 0; i < mMammoROI.cols; i++){
 	for(int j = 0; j < mMammoROI.rows; j++){
 	    if(mMammoROI.at<uchar>(j,i) == 0){
-		dMeanBackgroundValue += mMammo.at<Uint16>(j,i);	
+		dMeanBackgroundValue += mMammo.at<Uint16>(j,i);
 		iBackgroundSize++;
 	    }
 	}
@@ -87,7 +87,7 @@ void breast::getBreastEdge(){
 
     // Use .clone of ROI as this function would otherwise write to ROI.
     cv::findContours(this->mMammoROI.clone(),pEdgeContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);  // This works with the density calculation but ruins the thresholded image...
-    
+
     int iContSize = 0;
     for(auto i:pEdgeContours){
 	if(iContSize < (int)i.size()){
@@ -331,7 +331,7 @@ std::vector<float> breast::getDistBright(){ // Find the average brightness of pi
     vecDistAv.resize(256);
     cv::Mat mMammoCopy = mMammo8BitNorm;
     for(int i = 0; i < (int)vecDistBright.size(); ++i){ vecDistBright[i] = uchar(0);}	// Initialise vectors
-    for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}			// ...continued. 
+    for(int i = 0; i < (int)vecDistAv.size(); ++i){ vecDistAv[i] = 0;}			// ...continued.
 
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
@@ -383,6 +383,7 @@ void breast::getRadialThickness(){
     cv::Mat distImage(dist_h, dist_w, CV_8UC1, cv::Scalar(0));
     cv::Mat_<int> mMammoDistChar = this->mMammoDist;
     cv::Mat mMammoCopy;
+    int histSize = 255;
     vector<float> vecDistBrightBrightest = this->breastThickness(histSize, mMammoDistChar, mMammoCopy);
     for(int i = 1; i < vecDistBrightBrightest.size(); i++){
 	if(vecDistBrightBrightest[i-1] == 0){
@@ -447,56 +448,56 @@ void breast::drawImages(string fileName, const cv::Mat distImage, const cv::Mat 
     #endif
 }
 
-double breast::fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration){
-    phantomCalibration temp = calibration["lower"];
-    int sizeArr = temp.dataArr.size();
-    double x[sizeArr];
-    double y[sizeArr];
-    size_t var = 0;
-    for(auto it:temp.dataArr){
-        x[var] = it.first;
-        y[var] = it.second;
-        var++;
-    }
-    pair<double,double> coeff1 = scanner::linearfit(x,y,var);
-    temp = calibration["higher"];
-    for(auto it:temp.dataArr){
-        x[var] = it.first;
-        y[var] = it.second;
-        var++;
-    }
-    pair<double,double> coeff2 = scanner::linearfit(x,y,var);
-    double yStep;
-    if((coeff2.second - coeff1.second) == 0){
-        yStep = 0;
-    } else{
-        yStep = (coeff2.second - coeff1.second)/10;
-    }
-    pair<double,double> coeff3;
-    div_t divresult;
-    divresult = div(thickness,10);
-    coeff3.first = (coeff1.first+coeff2.first)/2;
-    coeff3.second = coeff1.second+ yStep*divresult.rem;
-    double tg(0);
-    double tgTemp;
-    ofstream myfile;
-    myfile.open ("example2.txt");
-    for(int i = 0; i < imDat.cols; i++){
-        for(int j = 0; j < imDat.rows; j++){
-            if(int(imDat.at<Uint16>(j,i)) == 0){
-                tgTemp = -coeff3.second/coeff3.first;
-            } else{
-                tgTemp = (log(double(imDat.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-            }
-            if(tgTemp >= 0){
-                tg += tgTemp;
-                myfile << imDat.at<Uint16>(j,i) << " " << tgTemp << "\n";
-            }
-        }
-    }
-    myfile.close();
-    return tg;
-}
+//double breast::fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration){
+//    phantomCalibration temp = calibration["lower"];
+//    int sizeArr = temp.dataArr.size();
+//    double x[sizeArr];
+//    double y[sizeArr];
+//    size_t var = 0;
+//    for(auto it:temp.dataArr){
+//        x[var] = it.first;
+//        y[var] = it.second;
+//        var++;
+//    }
+//    pair<double,double> coeff1 = scanner::linearfit(x,y,var);
+//    temp = calibration["higher"];
+//    for(auto it:temp.dataArr){
+//        x[var] = it.first;
+//        y[var] = it.second;
+//        var++;
+//    }
+//    pair<double,double> coeff2 = scanner::linearfit(x,y,var);
+//    double yStep;
+//    if((coeff2.second - coeff1.second) == 0){
+//        yStep = 0;
+//    } else{
+//        yStep = (coeff2.second - coeff1.second)/10;
+//    }
+//    pair<double,double> coeff3;
+//    div_t divresult;
+//    divresult = div(thickness,10);
+//    coeff3.first = (coeff1.first+coeff2.first)/2;
+//    coeff3.second = coeff1.second+ yStep*divresult.rem;
+//    double tg(0);
+//    double tgTemp;
+//    ofstream myfile;
+//    myfile.open ("example2.txt");
+//    for(int i = 0; i < imDat.cols; i++){
+//        for(int j = 0; j < imDat.rows; j++){
+//            if(int(imDat.at<Uint16>(j,i)) == 0){
+//                tgTemp = -coeff3.second/coeff3.first;
+//            } else{
+//                tgTemp = (log(double(imDat.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+//            }
+//            if(tgTemp >= 0){
+//                tg += tgTemp;
+//                myfile << imDat.at<Uint16>(j,i) << " " << tgTemp << "\n";
+//            }
+//        }
+//    }
+//    myfile.close();
+//    return tg;
+//}
 
 double breast::totalBreast(){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
@@ -506,14 +507,25 @@ double breast::totalBreast(){
         for(int j = 0; j < mMammoROI.rows; j++){
 	    // This used to be " == 1" - I don't understand why?
             if(mMammoROI.at<Uint8>(j,i) != 0)
-                counter++;
+               counter++;
         }
     }
     return double(counter*thickness);
 }
 
-double breast::glandpercent(const double tg, const double t){
-    return tg*100/t;
+pair<double,double> breast::glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t){
+    map<string, double> b_a = {{"MoMo", -0.053}, {"MoRh26", -0.041}, {"MoRh27", -0.0466}, {"MoRh28", -0.053}, {"MoRh29", -0.046}, {"RhRh29", -0.047}, {"RhRh30", -0.042}, {"RhRh31", -0.041}};
+    map<string, double> b_b = {{"MoMo", 4.402}, {"MoRh26", 4.321}, {"MoRh27", 4.827}, {"MoRh28", 5.173}, {"MoRh29", 5.123}, {"RhRh29", 5.39}, {"RhRh30", 5.313}, {"RhRh31", 5.444}};
+    div_t divresult;
+    divresult = div(t,10);
+    pair<int,int> thick = {divresult.quot*10,divresult.quot*10+10};
+    double a = (calib.calibSet.find(thick.first)->second.first+calib.calibSet.find(thick.second)->second.first)/2;
+    string lookFor = filTar+kV;
+    double a_calc = b_a.find(lookFor)->second;
+    double b_calc = b_b.find(lookFor)->second;
+    double b = a_calc*t+b_calc;
+    pair<double,double> ret = {a,b};
+    return ret;
 }
 
 void breast::thicknessMap(const pair<double,double> coeff3, const int exposure){

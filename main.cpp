@@ -150,71 +150,77 @@ int main(int argc, char** argv){
     string Exposure = various::ToString<long>(breastDat.Exposure);
     int thickness = atoi(bodyThickness.c_str());
     int exposure = atoi(Exposure.c_str());
-    int thickArr[2];
-    div_t divresult;
-    divresult = div(thickness,10);
-    thickArr[0] = divresult.quot*10;
-    thickArr[1] = (divresult.quot+1)*10;
+//    int thickArr[2];
+//    div_t divresult;
+//    divresult = div(thickness,10);
+//    thickArr[0] = divresult.quot*10;
+//    thickArr[1] = (divresult.quot+1)*10;
     dailyCalibration dcalib;
     dcalib.insertFilTar(breastDat);
     dcalib.InserQcTTg(breastDat, "qc.dat");
-    calibData dat;
-    phantomCalibration calib1;
-    calib1 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[0]);
-    calib1.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
-    dat["lower"] = calib1;
-    phantomCalibration calib2;
-    calib2 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[1]);
-    calib2.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
-    dat["higher"] = calib2;
+    phantomCalibration calib;
+    calib.getThicknessData(dcalib.filTar, atoi(KVP.c_str()));
+    calib.calibSet = calib.dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs);
+
+//    calibData dat;
+//    phantomCalibration calib1;
+//    calib1 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[0]);
+//    calib1.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
+//    dat["lower"] = calib1;
+//    phantomCalibration calib2;
+//    calib2 = phantomCalibration::getThicknessData(dcalib.filTar, atoi(KVP.c_str()), thickArr[1]);
+//    calib2.phantomCalibration::dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs, atoi(KVP.c_str()), dcalib.filTar, dcalib.t);
+//    dat["higher"] = calib2;
     //int tg = breast::fibrogland(breastDat.mMammo, thickness, exposure, dat);
 
-    phantomCalibration temp1 = dat["lower"];
-    int sizeArr = temp1.dataArr.size();
-    double x1[sizeArr];
-    double y1[sizeArr];
-    size_t var = 0;
-    for(auto it:temp1.dataArr){
-        x1[var] = it.first;
-        y1[var] = it.second;
-        var++;
-    }
-    pair<double,double> coeff1 = scanner::linearfit(x1,y1,var);
-    phantomCalibration temp2 = dat["higher"];
-    sizeArr = temp2.dataArr.size();
-    double x2[sizeArr];
-    double y2[sizeArr];
-    var = 0;
-    for(auto it:temp2.dataArr){
-        x2[var] = it.first;
-        y2[var] = it.second;
-        var++;
-    }
-    pair<double,double> coeff2 = scanner::linearfit(x2,y2,var);
-    double yStep;
-    if((coeff2.second - coeff1.second) == 0){
-        yStep = 0;
-    } else{
-        yStep = (coeff2.second - coeff1.second)/10;
-    }
-    pair<double,double> coeff3;
-    divresult = div(thickness,10);
-    coeff3.first = (coeff1.first+coeff2.first)/2;
-    coeff3.second = coeff1.second+yStep*divresult.rem;
+//    phantomCalibration temp1 = dat["lower"];
+//    int sizeArr = temp1.dataArr.size();
+//    double x1[sizeArr];
+//    double y1[sizeArr];
+//    size_t var = 0;
+//    for(auto it:temp1.dataArr){
+//        x1[var] = it.first;
+//        y1[var] = it.second;
+//        var++;
+//    }
+//    pair<double,double> coeff1 = scanner::linearfit(x1,y1,var);
+//    phantomCalibration temp2 = dat["higher"];
+//    sizeArr = temp2.dataArr.size();
+//    double x2[sizeArr];
+//    double y2[sizeArr];
+//    var = 0;
+//    for(auto it:temp2.dataArr){
+//        x2[var] = it.first;
+//        y2[var] = it.second;
+//        var++;
+//    }
+//    pair<double,double> coeff2 = scanner::linearfit(x2,y2,var);
+//    double yStep;
+//    if((coeff2.second - coeff1.second) == 0){
+//        yStep = 0;
+//    } else{
+//        yStep = (coeff2.second - coeff1.second)/10;
+//    }
+//    pair<double,double> coeff3;
+//    divresult = div(thickness,10);
+//    coeff3.first = (coeff1.first+coeff2.first)/2;
+//    coeff3.second = coeff1.second+yStep*divresult.rem;
+
+    pair<double,double> coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, double(thickness));
     double tg(0);
     double tgTemp;
     double refer(0);
-    double breastMaxVal;
-    for(int i = 0; i < breastDat.mMammo.cols; i++){
-        for(int j = 0; j < breastDat.mMammo.rows; j++){
-            if(breastDat.mMammoROI.at<Uint8>(j,i) != 0){
-                if(breastDat.mMammo.at<Uint16>(j,i) > refer){
-                    refer = breastDat.mMammo.at<Uint16>(j,i);
-                    breastMaxVal = breastDat.mMammo.at<Uint16>(j,i);
-                }
-            }
-        }
-    }
+//    double breastMaxVal;
+//    for(int i = 0; i < breastDat.mMammo.cols; i++){
+//        for(int j = 0; j < breastDat.mMammo.rows; j++){
+//            if(breastDat.mMammoROI.at<Uint8>(j,i) != 0){
+//                if(breastDat.mMammo.at<Uint16>(j,i) > refer){
+//                    refer = breastDat.mMammo.at<Uint16>(j,i);
+//                    breastMaxVal = breastDat.mMammo.at<Uint16>(j,i);
+//                }
+//            }
+//        }
+//    }
     /* double intercept = log(breastMaxVal/double(breastDat.Exposure)); */
     ofstream myfile;
     myfile.open ("example2.txt");
@@ -238,9 +244,8 @@ int main(int argc, char** argv){
         }
     }
     myfile.close();
-    int t = breastDat.totalBreast();
-    double glandPercent = breast::glandpercent(tg, t);
-    cout << glandPercent << endl;
+    double t = breastDat.totalBreast();
     breastDat.thicknessMap(coeff3, exposure);
     breastDat.thicknessMapRedVal(coeff3, exposure);
+    cout << tg/t*100 << endl;
 }

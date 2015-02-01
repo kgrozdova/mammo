@@ -4,21 +4,25 @@
 #include <utility>
 #include <string>
 #include <fstream>
+#include <map>
 
 #include "scanner.h"
 #include "various.h"
 
-class phantomCalibration {
+using namespace::std;
+
+class phantomCalibration{
     public:
-	std::vector< std::pair<double, double> > dataArr;
+	//std::vector< std::pair<double, double> > dataArr;
+	map<int, pair<double, double>> calibSet;
         phantomCalibration(){
         };
         ~phantomCalibration() {}
         // input the fibroglandular tissue thickness value into dataArr
-        void inputData(const double t, const double ln_MPV_mAs);
+        void inputData(map<int, vector<pair<double,double>>> rawData, const int i, const double tg, const double ln_MPV_mAs);
         // get the phantomCalibration class object with dataArr containing the data for given total thickness
-        static phantomCalibration getThicknessData(const std::string filTar, const int kV, const int t);
+        void getThicknessData(const string filTar, const int kV);
         void applyShift(const double shift);
-        void dataCorrection(const double x0, const double y0, const int kV, const std::string filTar, const int t);
+        map<int, pair<double, double>> dataCorrection(const double x0, const double y0);
 };
 
