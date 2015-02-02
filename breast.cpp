@@ -172,7 +172,6 @@ void breast::getBreastBottom(){
      *
      */
 
-    this->pEdgeContour;
     std::vector<cv::Point> pEdgePolyApprox;
     cv::approxPolyDP(this->pEdgeContourCompressed, pEdgePolyApprox, 3, 0);
 
@@ -193,10 +192,6 @@ void breast::getBreastBottom(){
     }
     // pEdgeAngleDeltas[i] = the angle of the corner at pEdgeCont...[i+1]
 
-    /* for(auto &i:pEdgePolyApprox){ */
-	/* /1* mMammoROITest.at<uchar>(i) = 100; *1/ */
-	/* cv::circle(mMammoROITest, i, 10, 50, -1); */
-    /* } */
     for(int i = 1; i < pEdgePolyApprox.size() ; i++){
 	double iRadius = pEdgeAngleDeltas[i-1];
 	cv::Point pTemp = pEdgePolyApprox[i];
@@ -204,6 +199,29 @@ void breast::getBreastBottom(){
 	    cv::circle(mMammoROITest, pTemp, iRadius, 120, -1);
 	}
     }
+    int iContPosY = mMammo.rows;
+    int iContPosX;
+    for(int i = 1; i < (int)pEdgePolyApprox.size(); i++){
+	if(pEdgeAngleDeltas[i-1] > 10){
+	    if(pEdgePolyApprox[i].y > 2*float(mMammo.rows)/3){
+		if(bLeft){
+		    if(pEdgePolyApprox[i].x < float(0.25*mMammo.cols)){
+			iContPosY = std::min(pEdgePolyApprox[i].y,iContPosY);
+			iContPosX = pEdgePolyApprox[i].x;
+		    }
+		} else {
+		    if(pEdgePolyApprox[i].x > float(0.75*mMammo.cols)){
+			iContPosY = std::min(pEdgePolyApprox[i].y,iContPosY);
+			iContPosX = pEdgePolyApprox[i].x;
+		    }
+		}
+	    }
+	}
+    }
+    cv::circle(mMammoROITest, cv::Point(iContPosX,iContPosY), 10, 0, -1);
+    /* this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPosY); */
+    // Need to make "deleteUneeded" work from the polyApprox contour and/or pass it the whole point.
+    // Otherwise, this works reasonably well.
     cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
     cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
 }
