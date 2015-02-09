@@ -168,7 +168,7 @@ void breast::getBreastBottom(){
      *
      *
      *	CHAIN TEST FROM CONTOURS
-     *
+     *	    NEED TO LOOK FOR CORNERS IN UPPER REGION OF IMAGE. SOME BREASTS BADLY BEHAVED..
      *
      */
 
@@ -422,15 +422,22 @@ std::vector<float> breast::breastThickness(const int histSize, const cv::Mat_<in
     for(int i = 0; i < (int)vecDistAvBrightest.size(); ++i){ vecDistAvBrightest[i] = 0;}
 
 
-    // Find the total brightness of the brightest half of pixels at each distance.
+    // Find the total brightness of the brightest half of pixels at each distance,
+    // and draw the fat ROI for the image.
+    /* this->mMammoFatROI = cv::Mat((int)mMammo8BitNorm.rows, (int)mMammo8BitNorm.cols, CV_8UC1, cv::Scalar(1)); */
+    this->mMammoFatROI = this->mMammoROI.clone();
     for(int i = 0; i < mMammo8Bit.cols; i++){
         for(int j = 0; j < mMammo8BitNorm.rows; j++){
+	    if(mMammoROI.at<uchar>(j,i) != 0){
             int iDist = int(mMammoDistChar(j,i));
             if(int(mMammo8BitNorm.at<uchar>(j,i)) >= this->vecDistBright[iDist]){
+	    mMammoFatROI.at<uchar>(j,i) = 128;
             vecDistBrightBrightest[iDist]+=float(mMammo8BitNorm.at<uchar>(j,i));
             vecDistAvBrightest[iDist]++;}
+	    }
         }
     }
+    cv::imwrite(this->strFileName+"FatROI.png", mMammoFatROI);
 
     // Find the average brightness by dividing the total brightness by the number of pixels.
     for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){

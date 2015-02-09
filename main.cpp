@@ -168,7 +168,7 @@ int main(int argc, char** argv){
     pair<double,double> coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, double(thickness));
     double tg(0);
     double tgTemp;
-    double refer(0);
+    /* double refer(0); */
 //    double breastMaxVal;
 //    for(int i = 0; i < breastDat.mMammo.cols; i++){
 //        for(int j = 0; j < breastDat.mMammo.rows; j++){
