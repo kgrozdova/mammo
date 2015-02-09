@@ -102,6 +102,9 @@ int main(int argc, char** argv){
     //
     // DRAWING THE PICTURES
     //
+    
+    cout << "Is fat? " << breastDat.isFat(400,1900) << endl << endl;
+    cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
 
     string KVP = various::ToString<OFString>(breastDat.KVP);

@@ -219,10 +219,11 @@ void breast::getBreastBottom(){
 	}
     }
     cv::circle(mMammoROITest, cv::Point(iContPosX,iContPosY), 10, 0, -1);
-    /* this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPosY); */
+    this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPosY);
     // Need to make "deleteUneeded" work from the polyApprox contour and/or pass it the whole point.
     // Otherwise, this works reasonably well.
     cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
+    this->mMammoROISmaller = mMammoROITest.clone();
     cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
 }
 
@@ -669,3 +670,17 @@ void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int expo
     cv::imwrite("test_thickMapRed.png",dst);
 }
 
+double breast::getHeight(int x, int y){
+    // Radial thickness model:
+    // First, we need to find the distance of the pixel from the breast edge.
+    int iDistance = this->mMammoDist.at<uchar>(y,x);
+    return double (vecDistBrightBrightest[iDistance]); 
+}
+
+bool breast::isFat(int x, int y){
+    return (mMammoFatROI.at<uchar>(y,x) == 128);
+}
+
+bool breast::isBreast(int x, int y){
+    return (mMammoROI.at<uchar>(y,x) > 0);
+}
