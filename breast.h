@@ -83,7 +83,11 @@ class breast: public mammography, phantomCalibration{
 	bool isBreastROI(int x, int y); // Is a pixel within our ROI? (i.e. breast, and not pectoral muscle / skin fold)
 	bool isFat(int x, int y);	// Is a pixel is fat?
 
-
+    pair<double, pair<int, int> > findFatCompressed(const bool bLeft);
+    pair<int,vector<pair<int, double>>> isFatRow(const int row, const pair<double, pair<int, int> > fatReferencePix, const double thickness);
+    static pair<int, int> contactBorder(const pair<int,vector<pair<int, double>>> fatRow);
+    vector<pair<int,int>> contactBorderShape(const pair<double, pair<int, int> > fatReferencePix, const double thickness);
+    void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> contactBorderShapeVal);
 
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);

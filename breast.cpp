@@ -674,7 +674,7 @@ double breast::getHeight(int x, int y){
     // Radial thickness model:
     // First, we need to find the distance of the pixel from the breast edge.
     int iDistance = this->mMammoDist.at<uchar>(y,x);
-    return double (vecDistBrightBrightest[iDistance]); 
+    return double(vecDistBrightBrightest[iDistance]);
 }
 
 bool breast::isFat(int x, int y){
@@ -683,4 +683,146 @@ bool breast::isFat(int x, int y){
 
 bool breast::isBreast(int x, int y){
     return (mMammoROI.at<uchar>(y,x) > 0);
+}
+
+pair<double, pair<int, int> > breast::findFatCompressed(const bool bLeft){
+    pair<double, pair<int, int> > fatPixel;
+    bool isFatVar;
+    if(bLeft){
+        for(int i = 0; i < mMammo.cols; i++){
+            for(int j = 0; j < mMammo.cols; j++){
+                isFatVar = breast::isBreast(j,i);
+                if(isFatVar){
+                    if(breast::isFat(j,i)){
+                        fatPixel = make_pair(double(mMammo.at<Uint16>(j,i)),make_pair(j,i));
+                        break;
+                    }
+                }
+            }
+            if(fatPixel.first != 0)
+                break;
+        }
+    } else{
+        for(int i = mMammo.cols; i > 0; i--){
+            for(int j = mMammo.rows; j > 0; j--){
+                isFatVar = breast::isBreast(j,i);
+                if(isFatVar){
+                    if(breast::isFat(j,i)){
+                        fatPixel = make_pair(double(mMammo.at<Uint16>(j,i)),make_pair(j,i));
+                        break;
+                    }
+                }
+            }
+            if(fatPixel.first != 0)
+                break;
+        }
+    }
+    return fatPixel;
+}
+
+pair<int,vector<pair<int, double>>> breast::isFatRow(const int row, const pair<double, pair<int, int> > fatReferencePix, const double thickness){
+    pair<int,vector<pair<int, double>>> fatRow;
+    vector<pair<int, double>> fatRowTemp;
+    double hFat;
+    ofstream myfile;
+    myfile.open ("rowFatThickness.txt");
+    for(int i = 0; i < mMammo.cols; i++){
+            if(isBreast(row,i)){
+                if(isFat(row,i)){
+                    hFat = (thickness/10+log(fatReferencePix.first/double(mMammo.at<Uint16>(i,row)))/(0.3))*10;
+                    fatRowTemp.push_back(make_pair(i, hFat));
+                    myfile << i << " " << hFat << "\n";
+                }
+            }
+    }
+    myfile.close();
+    return make_pair(row,fatRowTemp);
+}
+
+pair<int, int> breast::contactBorder(const pair<int,vector<pair<int, double>>> fatRow){
+    pair<int, int> rowBorder;
+    vector<pair<int, double>> fatRowTemp = fatRow.second;
+    double MPVtemp[5];
+    int vecLength = fatRowTemp.size();
+    bool rowBorderDone;
+    double sumForAverage, average;
+    if(vecLength == 0){
+        return make_pair(0,0);
+    }
+    for(int i = 0; i < vecLength-5; i++){
+        bool termPoint;
+        for(int j = 0; j < 5; j++){
+            MPVtemp[j] = fatRowTemp[i +j].second;
+        }
+        for(int j = 0; j < 5; j++){
+            if(MPVtemp[j]<MPVtemp[j+1]){
+                termPoint = true;
+            } else{
+                break;
+            }
+        }
+        for(int k = 0; k < i; k++){
+            sumForAverage += fatRowTemp[k].second;
+        }
+        average = sumForAverage/double(i);
+        if(termPoint && (MPVtemp[1] > (average + 0.6))){
+            rowBorder = make_pair(fatRow.first, fatRowTemp[i].first);
+            rowBorderDone = true;
+            break;
+        }
+        sumForAverage = 0;
+    }
+    if(rowBorderDone == false)
+        rowBorder = make_pair(fatRow.first, fatRowTemp[vecLength].first);
+    return rowBorder;
+}
+
+vector<pair<int,int>> breast::contactBorderShape(const pair<double, pair<int, int> > fatReferencePix, const double thickness){
+    pair<int,vector<pair<int, double>>> fatRowTemp;
+    pair<int, int> contactBorderPix;
+    vector<pair<int,int>> borderShape;
+    for(int i = 0; i < mMammo.rows; i++){
+        fatRowTemp = isFatRow(i, fatReferencePix, thickness);
+       if(fatRowTemp.second.size() !=0 ){
+            contactBorderPix = contactBorder(fatRowTemp);
+            borderShape.push_back(make_pair(contactBorderPix.first,contactBorderPix.second));
+        }
+    }
+    return borderShape;
+}
+
+void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> contactBorderShapeVal){
+    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
+    int thickness = atoi(bodyThickness.c_str());
+    double tgTemp;
+    double maxPixValCurve = exp(coeff3.second)*exposure;
+    for(int i = 0; i < mMammo.cols; i++){
+        for(int j = 0; j < mMammo.rows; j++){
+            if(mMammoROI.at<Uint8>(j,i) != 0){
+                    if(int(mMammo.at<Uint16>(j,i)) == 0){
+                        tgTemp = thickness;
+                    } else{
+                        tgTemp = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                    }
+                    if(tgTemp >= 0 && tgTemp <= thickness){
+                        tg.at<Uint8>(j,i) = tgTemp*double(255/thickness);
+                    } else if(tgTemp > thickness){
+                        tg.at<Uint8>(j,i) = thickness*double(255/thickness);
+                    } else{
+                        tg.at<Uint8>(j,i) = 0;
+                    }
+        }
+    }
+    }
+    cv::Mat dst;
+    cvtColor(tg,dst,CV_GRAY2RGB);
+    cv::Vec3b color;
+    color.val[0] = 0;
+    color.val[1] = 0;
+    color.val[2] = 255;
+        for(int j = 0; j < 1075; j++){
+            dst.at<cv::Vec3b>(cv::Point(j,contactBorderShapeVal[j].second)) = color;
+        }
+    cv::imwrite("test_thickMapRedBorder.png",dst);
 }

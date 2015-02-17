@@ -63,7 +63,7 @@ int main(int argc, char** argv){
 	//
 	// FIGURE OUT WHETHER WE ARE LOOKING AT A LEFT OR RIGHT BREAST
 	//
-	/* bool bLeft = breastDat.leftOrRight(); */
+	 bool bLeft = breastDat.leftOrRight();
 	 //
 	 // TRY TO FIND A CORNER NEAR THE BOTTOM OF THE BREAST
 	 //
@@ -102,7 +102,7 @@ int main(int argc, char** argv){
     //
     // DRAWING THE PICTURES
     //
-    
+
     cout << "Is fat? " << breastDat.isFat(400,1900) << endl << endl;
     cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
@@ -110,7 +110,7 @@ int main(int argc, char** argv){
     string KVP = various::ToString<OFString>(breastDat.KVP);
     string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);
     string Exposure = various::ToString<long>(breastDat.Exposure);
-    int thickness = atoi(bodyThickness.c_str());
+    double thickness = atoi(bodyThickness.c_str());
     int exposure = atoi(Exposure.c_str());
 //    int thickArr[2];
 //    div_t divresult;
@@ -122,7 +122,7 @@ int main(int argc, char** argv){
     dcalib.InserQcTTg(breastDat, "qc.dat");
     phantomCalibration calib;
     calib.getThicknessData(dcalib.filTar, atoi(KVP.c_str()));
-    calib.calibSet = calib.dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs);
+    //calib.calibSet = calib.dataCorrection(dcalib.tg, dcalib.qc_ln_MPV_mAs);
 
 //    calibData dat;
 //    phantomCalibration calib1;
@@ -168,7 +168,7 @@ int main(int argc, char** argv){
 //    coeff3.first = (coeff1.first+coeff2.first)/2;
 //    coeff3.second = coeff1.second+yStep*divresult.rem;
 
-    pair<double,double> coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, double(thickness));
+    pair<double,double> coeff3;
     double tg(0);
     double tgTemp;
     /* double refer(0); */
@@ -186,9 +186,12 @@ int main(int argc, char** argv){
     /* double intercept = log(breastMaxVal/double(breastDat.Exposure)); */
     ofstream myfile;
     myfile.open ("example2.txt");
+    int num(0);
     for(int i = 0; i < breastDat.mMammo.cols; i++){
         for(int j = 0; j < breastDat.mMammo.rows; j++){
-            if(breastDat.mMammoROI.at<Uint8>(j,i) != 0){
+            if(breastDat.isBreast(j,i)){
+                //thickness = breastDat.getHeight(j, i);
+                coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, thickness);
                 if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                     tgTemp = thickness;
                 } else{
@@ -202,12 +205,18 @@ int main(int argc, char** argv){
                     tg += 0;
                 }
                 myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
+                num++;
             }
         }
     }
+    cout << num << endl;
     myfile.close();
     double t = breastDat.totalBreast();
     breastDat.thicknessMap(coeff3, exposure);
     breastDat.thicknessMapRedVal(coeff3, exposure);
     cout << tg/t*100 << endl;
+
+    pair<double, pair<int, int> > fatPixel = breastDat.findFatCompressed(bLeft);
+    vector<pair<int,int>> borderShape = breastDat.contactBorderShape(fatPixel, thickness);
+    breastDat.thicknessMapRedValBorder(coeff3, exposure, borderShape);
 }

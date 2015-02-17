@@ -150,6 +150,7 @@ map<int, pair<double, double>> phantomCalibration::dataCorrection(const double x
     pair<double,double> copyPair;
     for(auto it:calibSet){
             shift = scanner::calcShift(it.second, x0, y0);
+            cout << shift << endl;
             x = (y0 - it.second.second)/it.second.first;
             copyPair = {it.second.first, it.second.second+((x+shift)*it.second.second)/x-it.second.second};
             calibCopy[it.first] = copyPair;

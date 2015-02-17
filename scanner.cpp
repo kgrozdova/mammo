@@ -13,6 +13,7 @@ pair<double,double> scanner::linearfit(const double* x, const double* y, const i
 }
 
 double scanner::calcShift(const pair<double,double> coeff, const double x0, const double y){
+    cout << coeff.first << " " << coeff.second << endl;
     double x = (y - coeff.second)/coeff.first;
     double shift = x - x0;
     return shift;
