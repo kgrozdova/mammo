@@ -14,7 +14,10 @@
 typedef map< string, phantomCalibration> calibData;
 
 breast::breast(std::string t_strFileName): mammography(t_strFileName){
+    this->strFileName = breast::fileNameErase(t_strFileName);
     this->pixelVec2Mat();
+    this->mChenFatClass = cv::imread(this->strFileName+"labelMap.png");
+    cv::resize(mChenFatClass,mChenFatClass,this->mMammo.size());
     cv::minMaxLoc(mMammo,&this->dMinPixelValue,&this->dMaxPixelValue);
     this->getBreastROI();
     this->getBreastDistMap();
@@ -26,6 +29,7 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
 			    // accessed
     this->getBreastBottom();
     this->getRadialThickness();
+    this->makeXinROIMap();
 }
 
 void breast::pixelVec2Mat(){
@@ -681,6 +685,23 @@ bool breast::isFat(int x, int y){
     return (mMammoFatROI.at<uchar>(y,x) == 128);
 }
 
+void breast::makeXinROIMap(){
+    cv::Mat HRROIMap = this->mChenFatClass.clone();
+    cv::Mat HeightMap(HRROIMap.rows,HRROIMap.cols,CV_32F,cv::Scalar(0));
+    for(int i = 0; i < HRROIMap.cols; i++){
+	for(int j = 0; j < HRROIMap.rows; j++){
+	    if(mChenFatClass.at<Uint8>(j,i,0)==2){ // 2 = fat
+		/* HRROIMap.at<Uint8>(j,i) = 255; */
+		HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue)));
+
+	    }
+	}
+    }
+    HRROIMap = mChenFatClass*(256/5);
+    HeightMap = HeightMap*256;
+    cv::imwrite("OllieFatTest.png",HeightMap);
+}
+
 bool breast::isBreast(int x, int y){
     return (mMammoROI.at<uchar>(y,x) > 0);
 }
@@ -744,7 +765,7 @@ pair<int, int> breast::contactBorder(const pair<int,vector<pair<int, double>>> f
     vector<pair<int, double>> fatRowTemp = fatRow.second;
     double MPVtemp[5];
     int vecLength = fatRowTemp.size();
-    bool rowBorderDone;
+    bool rowBorderDone = false;
     double sumForAverage, average;
     if(vecLength == 0){
         return make_pair(0,0);
@@ -796,7 +817,7 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
     double tgTemp;
-    double maxPixValCurve = exp(coeff3.second)*exposure;
+    /* double maxPixValCurve = exp(coeff3.second)*exposure; */
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
             if(mMammoROI.at<Uint8>(j,i) != 0){

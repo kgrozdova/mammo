@@ -26,6 +26,7 @@ class breast: public mammography, phantomCalibration{
 	std::vector<cv::Point> vecContCents;
 	std::vector<float> vecDistBright;
 	std::vector<float> vecDistBrightBrightest;
+	cv::Mat mChenFatClass;
 	double dMaxPixelValue;
 	double dMinPixelValue;
 	bool bLeft;
@@ -82,6 +83,7 @@ class breast: public mammography, phantomCalibration{
 	bool isBreast(int x, int y);	// Is a pixel is breast or background?
 	bool isBreastROI(int x, int y); // Is a pixel within our ROI? (i.e. breast, and not pectoral muscle / skin fold)
 	bool isFat(int x, int y);	// Is a pixel is fat?
+	void makeXinROIMap();
 
     pair<double, pair<int, int> > findFatCompressed(const bool bLeft);
     pair<int,vector<pair<int, double>>> isFatRow(const int row, const pair<double, pair<int, int> > fatReferencePix, const double thickness);
