@@ -13,6 +13,13 @@
 #include <cmath>
 #include <algorithm>
 
+
+#define XIN_BACKGROUND 1
+#define XIN_FAT 2
+#define XIN_PECTORAL_MUSCLE 3
+#define XIN_GLAND 4
+#define XIN_NIPPLE 5
+
 class breast: public mammography, phantomCalibration{
     private:
 
@@ -84,6 +91,7 @@ class breast: public mammography, phantomCalibration{
 	bool isBreastROI(int x, int y); // Is a pixel within our ROI? (i.e. breast, and not pectoral muscle / skin fold)
 	bool isFat(int x, int y);	// Is a pixel is fat?
 	void makeXinROIMap();
+	int getPixelType(int x, int y); // What type is a pixel?
 
     pair<double, pair<int, int> > findFatCompressed(const bool bLeft);
     pair<int,vector<pair<int, double>>> isFatRow(const int row, const pair<double, pair<int, int> > fatReferencePix, const double thickness);

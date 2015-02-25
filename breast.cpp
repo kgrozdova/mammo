@@ -702,6 +702,15 @@ void breast::makeXinROIMap(){
     cv::imwrite("OllieFatTest.png",HeightMap);
 }
 
+int breast::getPixelType(int x, int y){
+    int iType = this->mChenFatClass.at<Uint8>(y,x);
+    if (iType == 1) return XIN_BACKGROUND;
+    if (iType == 2) return XIN_FAT;
+    if (iType == 3) return XIN_PECTORAL_MUSCLE;
+    if (iType == 4) return XIN_GLAND;
+    if (iType == 5) return XIN_NIPPLE;
+}
+
 bool breast::isBreast(int x, int y){
     return (mMammoROI.at<uchar>(y,x) > 0);
 }
