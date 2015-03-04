@@ -93,11 +93,11 @@ class breast: public mammography, phantomCalibration{
 	void makeXinROIMap();
 	int getPixelType(int x, int y); // What type is a pixel?
 
-    pair<double, pair<int, int> > findFatCompressed(const bool bLeft);
-    pair<int,vector<pair<int, double>>> isFatRow(const int row, const pair<double, pair<int, int> > fatReferencePix, const double thickness);
-    static pair<int, int> contactBorder(const pair<int,vector<pair<int, double>>> fatRow);
-    vector<pair<int,int>> contactBorderShape(const pair<double, pair<int, int> > fatReferencePix, const double thickness);
     void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> contactBorderShapeVal);
+
+    vector<pair<int,int>> pixelOfInterestExposure();
+    map<int,double> distMap(vector<pair<int,int>> pixelOfInterestExposureVec);
+    void applyExposureCorrestion(map<int,double> breastDistMap);
 
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);

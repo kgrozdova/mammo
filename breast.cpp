@@ -730,112 +730,6 @@ bool breast::isBreast(int x, int y){
     return (mMammoROI.at<uchar>(y,x) > 0);
 }
 
-pair<double, pair<int, int> > breast::findFatCompressed(const bool bLeft){
-    pair<double, pair<int, int> > fatPixel;
-    bool isFatVar;
-    if(bLeft){
-        for(int i = 0; i < mMammo.cols; i++){
-            for(int j = 0; j < mMammo.cols; j++){
-                isFatVar = breast::isBreast(j,i);
-                if(isFatVar){
-                    if(breast::isFat(j,i)){
-                        fatPixel = make_pair(double(mMammo.at<Uint16>(j,i)),make_pair(j,i));
-                        break;
-                    }
-                }
-            }
-            if(fatPixel.first != 0)
-                break;
-        }
-    } else{
-        for(int i = mMammo.cols; i > 0; i--){
-            for(int j = mMammo.rows; j > 0; j--){
-                isFatVar = breast::isBreast(j,i);
-                if(isFatVar){
-                    if(breast::isFat(j,i)){
-                        fatPixel = make_pair(double(mMammo.at<Uint16>(j,i)),make_pair(j,i));
-                        break;
-                    }
-                }
-            }
-            if(fatPixel.first != 0)
-                break;
-        }
-    }
-    return fatPixel;
-}
-
-pair<int,vector<pair<int, double>>> breast::isFatRow(const int row, const pair<double, pair<int, int> > fatReferencePix, const double thickness){
-    pair<int,vector<pair<int, double>>> fatRow;
-    vector<pair<int, double>> fatRowTemp;
-    double hFat;
-    ofstream myfile;
-    myfile.open ("rowFatThickness.txt");
-    for(int i = 0; i < mMammo.cols; i++){
-            if(isBreast(row,i)){
-                if(isFat(row,i)){
-                    hFat = (thickness/10+log(fatReferencePix.first/double(mMammo.at<Uint16>(i,row)))/(0.3))*10;
-                    fatRowTemp.push_back(make_pair(i, hFat));
-                    myfile << i << " " << hFat << "\n";
-                }
-            }
-    }
-    myfile.close();
-    return make_pair(row,fatRowTemp);
-}
-
-pair<int, int> breast::contactBorder(const pair<int,vector<pair<int, double>>> fatRow){
-    pair<int, int> rowBorder;
-    vector<pair<int, double>> fatRowTemp = fatRow.second;
-    double MPVtemp[5];
-    int vecLength = fatRowTemp.size();
-    bool rowBorderDone = false;
-    double sumForAverage, average;
-    if(vecLength == 0){
-        return make_pair(0,0);
-    }
-    for(int i = 0; i < vecLength-5; i++){
-        bool termPoint;
-        for(int j = 0; j < 5; j++){
-            MPVtemp[j] = fatRowTemp[i +j].second;
-        }
-        for(int j = 0; j < 5; j++){
-            if(MPVtemp[j]<MPVtemp[j+1]){
-                termPoint = true;
-            } else{
-                break;
-            }
-        }
-        for(int k = 0; k < i; k++){
-            sumForAverage += fatRowTemp[k].second;
-        }
-        average = sumForAverage/double(i);
-        if(termPoint && (MPVtemp[1] > (average + 0.6))){
-            rowBorder = make_pair(fatRow.first, fatRowTemp[i].first);
-            rowBorderDone = true;
-            break;
-        }
-        sumForAverage = 0;
-    }
-    if(rowBorderDone == false)
-        rowBorder = make_pair(fatRow.first, fatRowTemp[vecLength].first);
-    return rowBorder;
-}
-
-vector<pair<int,int>> breast::contactBorderShape(const pair<double, pair<int, int> > fatReferencePix, const double thickness){
-    pair<int,vector<pair<int, double>>> fatRowTemp;
-    pair<int, int> contactBorderPix;
-    vector<pair<int,int>> borderShape;
-    for(int i = 0; i < mMammo.rows; i++){
-        fatRowTemp = isFatRow(i, fatReferencePix, thickness);
-       if(fatRowTemp.second.size() !=0 ){
-            contactBorderPix = contactBorder(fatRowTemp);
-            borderShape.push_back(make_pair(contactBorderPix.first,contactBorderPix.second));
-        }
-    }
-    return borderShape;
-}
-
 void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> contactBorderShapeVal){
     cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
@@ -870,4 +764,66 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
             dst.at<cv::Vec3b>(cv::Point(j,contactBorderShapeVal[j].second)) = color;
         }
     /* cv::imwrite("test_thickMapRedBorder.png",dst); */
+}
+
+vector<pair<int,int>> breast::pixelOfInterestExposure(){
+    vector<pair<int,int>> pixelOfInterestExposureVec;
+    int peakPos, peakVal(0);
+    for(int i = 0; i < this->iHistSize; i++){
+        if(this->mHist.at<Uint16>(i) > peakVal){
+            peakVal = this->mHist.at<Uint16>(i);
+            peakPos = i;
+        }
+    }
+    int MPVRangeLimit = (this->LargestImagePixelValue/512)*(peakPos+100);
+    for(int i = 0; i < this->mMammo.cols; i++){
+         for(int j = 0; j < this->mMammo.rows; j++){
+            if(this->mMammo.at<Uint16>(j,i) < MPVRangeLimit)
+                pixelOfInterestExposureVec.push_back(make_pair(j,i));
+         }
+    }
+    return pixelOfInterestExposureVec;
+}
+
+map<int,double> breast::distMap(vector<pair<int,int>> pixelOfInterestExposureVec){
+    map<int,double> breastDistMap;
+    map<int,vector<double>> samePixDist;
+    int distVal, vecLength;
+    double MPVsum, countPix;
+    for(int i = 0; i < this->mMammoDist.cols; i++){
+         for(int j = 0; j < this->mMammoDist.rows; j++){
+            distVal = this->mMammoDist.at<Uint16>(j,i);
+            if(!samePixDist.count(distVal)){
+                vector<double> sameDistPixMPV;
+                samePixDist[distVal] = sameDistPixMPV;
+            }
+            samePixDist[distVal].push_back(this->mMammo.at<Uint16>(j,i));
+         }
+    }
+    for(map<int,vector<double>>::iterator it = samePixDist.begin() ; it != samePixDist.end(); ++it){
+        MPVsum = 0; countPix = 0;
+        vecLength = it->second.size();
+        for(vector<double>::iterator vec = it->second.begin() ; vec != it->second.end(); ++vec){
+            MPVsum += *vec;
+            countPix++;
+        }
+        breastDistMap[it->first] = MPVsum/countPix;
+    }
+    return breastDistMap;
+}
+
+void breast::applyExposureCorrestion(map<int,double> breastDistMap){
+    double distAvNext;
+    int distVal;
+    for(int i = 0; i < this->mMammo.cols; i++){
+         for(int j = 0; j < this->mMammo.rows; j++){
+            distVal = this->mMammoDist.at<Uint16>(j,i);
+            if(breastDistMap.count(distVal+1)){
+                distAvNext = breastDistMap[distVal+1];
+            } else{
+                distAvNext = breastDistMap[distVal-1];
+            }
+            this->mMammo.at<Uint16>(j,i) = this->mMammo.at<Uint16>(j,i)*(breastDistMap[distVal]/distAvNext);
+         }
+    }
 }
