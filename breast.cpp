@@ -226,9 +226,9 @@ void breast::getBreastBottom(){
     this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPosY);
     // Need to make "deleteUneeded" work from the polyApprox contour and/or pass it the whole point.
     // Otherwise, this works reasonably well.
-    cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
+    /* cv::imwrite(strFileName + "cornerTest.png", mMammoROITest); */
     this->mMammoROISmaller = mMammoROITest.clone();
-    cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
+    /* cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm); */
 }
 
 void breast::drawHist(){
@@ -252,7 +252,7 @@ void breast::drawHist(){
 	    iMax = i;
 	}
     }
-    cv::imwrite(strFileName+"_hist.jpg", histImage );
+    /* cv::imwrite(strFileName+"_hist.jpg", histImage ); */
 }
 
 pair<float, float> breast::findHistPeak(){
@@ -442,7 +442,7 @@ std::vector<float> breast::breastThickness(const int histSize, const cv::Mat_<in
 	    }
         }
     }
-    cv::imwrite(this->strFileName+"FatROI.png", mMammoFatROI);
+    /* cv::imwrite(this->strFileName+"FatROI.png", mMammoFatROI); */
 
     // Find the average brightness by dividing the total brightness by the number of pixels.
     for(int i = 0; i < (int)vecDistBrightBrightest.size(); ++i){
@@ -506,23 +506,23 @@ void breast::drawImages(string fileName, const cv::Mat mCornerTresh, const cv::M
     /*                     cv::Point(bin_w*(i), dist_h - cvRound(vecDistBrightBrightest[i])), */
     /*                     cv::Scalar(255, 255, 255), 2, 8, 0); */
     /* } */
-    cv::imwrite(fileName+"_dist.png", this->mMammoDistImage );
+    /* cv::imwrite(fileName+"_dist.png", this->mMammoDistImage ); */
     #endif
 
     #ifdef OL_DRAW_CORNER
-        cv::imwrite(fileName+"_corner.png", mCornerThresh);
+        /* cv::imwrite(fileName+"_corner.png", mCornerThresh); */
     #endif
 
     #ifdef OL_DRAW_DISTMAP
-        cv::imwrite(fileName+"_distmap.png", mMammoDist);
+        /* cv::imwrite(fileName+"_distmap.png", mMammoDist); */
     #endif
 
     #ifdef OL_DRAW_THRESH
-        cv::imwrite(fileName+"_thresh.png", mMammoThreshedCopy);
+        /* cv::imwrite(fileName+"_thresh.png", mMammoThreshedCopy); */
     #endif
 
     #ifdef OL_DRAW_ALTERED
-        cv::imwrite(fileName+"_alt.png", mMammo);
+        /* cv::imwrite(fileName+"_alt.png", mMammo); */
     #endif
 }
 
@@ -629,7 +629,7 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure){
         }
     }
     }
-    cv::imwrite("test_thickMap.png",tg);
+    /* cv::imwrite("test_thickMap.png",tg); */
 }
 
 void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int exposure){
@@ -671,7 +671,7 @@ void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int expo
             }
         }
     }
-    cv::imwrite("test_thickMapRed.png",dst);
+    /* cv::imwrite("test_thickMapRed.png",dst); */
 }
 
 double breast::getHeight(int x, int y){
@@ -697,9 +697,23 @@ void breast::makeXinROIMap(){
 	    }
 	}
     }
-    HRROIMap = mChenFatClass*(256/5);
-    HeightMap = HeightMap*256;
-    cv::imwrite("OllieFatTest.png",HeightMap);
+    double minVal;
+    double maxVal;
+
+    // Rescale the image to make it lie between 0 and 255
+    cv::minMaxLoc(HeightMap, &minVal, &maxVal);
+    for(int i = 1; i < HRROIMap.cols; i++){
+	for(int j = 0; j < HRROIMap.rows; j++){
+	    if(mChenFatClass.at<Uint8>(j,i,0)==2){ // 2 = fat
+		HeightMap.at<float>(j,i)-=float(minVal);
+	    }
+	}
+    }
+    cv::minMaxLoc(HeightMap, &minVal, &maxVal);
+    HeightMap = HeightMap*256/maxVal;
+
+    HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256
+    cv::imwrite(strFileName+"FatLogTransform.png",HeightMap);
 }
 
 int breast::getPixelType(int x, int y){
@@ -709,6 +723,7 @@ int breast::getPixelType(int x, int y){
     if (iType == 3) return XIN_PECTORAL_MUSCLE;
     if (iType == 4) return XIN_GLAND;
     if (iType == 5) return XIN_NIPPLE;
+    return 0;
 }
 
 bool breast::isBreast(int x, int y){
@@ -854,5 +869,5 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
         for(int j = 0; j < 1075; j++){
             dst.at<cv::Vec3b>(cv::Point(j,contactBorderShapeVal[j].second)) = color;
         }
-    cv::imwrite("test_thickMapRedBorder.png",dst);
+    /* cv::imwrite("test_thickMapRedBorder.png",dst); */
 }
