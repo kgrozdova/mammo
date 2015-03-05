@@ -19,6 +19,7 @@
 #define XIN_PECTORAL_MUSCLE 3
 #define XIN_GLAND 4
 #define XIN_NIPPLE 5
+#define XIN_DENSER_GLAND 6
 
 class breast: public mammography, phantomCalibration{
     private:

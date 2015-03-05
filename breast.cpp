@@ -16,7 +16,7 @@ typedef map< string, phantomCalibration> calibData;
 breast::breast(std::string t_strFileName): mammography(t_strFileName){
     this->strFileName = breast::fileNameErase(t_strFileName);
     this->pixelVec2Mat();
-    this->mChenFatClass = cv::imread(this->strFileName+"labelMap.png");
+    this->mChenFatClass = cv::imread(this->strFileName+"Label.tiff");
     cv::resize(mChenFatClass,mChenFatClass,this->mMammo.size());
     cv::minMaxLoc(mMammo,&this->dMinPixelValue,&this->dMaxPixelValue);
     this->getBreastROI();
@@ -27,9 +27,11 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
 			    // functions that automatically calculate
 			    // the things they need when the are first
 			    // accessed
+    if(bLeft){
     this->getBreastBottom();
     this->getRadialThickness();
     this->makeXinROIMap();
+    }
 }
 
 void breast::pixelVec2Mat(){
@@ -690,7 +692,7 @@ void breast::makeXinROIMap(){
     cv::Mat HeightMap(HRROIMap.rows,HRROIMap.cols,CV_32F,cv::Scalar(0));
     for(int i = 0; i < HRROIMap.cols; i++){
 	for(int j = 0; j < HRROIMap.rows; j++){
-	    if(mChenFatClass.at<Uint8>(j,i,0)==2){ // 2 = fat
+	    if(this->getPixelType(i,j)==XIN_FAT){ // 2 = fat
 		/* HRROIMap.at<Uint8>(j,i) = 255; */
 		HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue)));
 
@@ -704,25 +706,29 @@ void breast::makeXinROIMap(){
     cv::minMaxLoc(HeightMap, &minVal, &maxVal);
     for(int i = 1; i < HRROIMap.cols; i++){
 	for(int j = 0; j < HRROIMap.rows; j++){
-	    if(mChenFatClass.at<Uint8>(j,i,0)==2){ // 2 = fat
-		HeightMap.at<float>(j,i)-=float(minVal);
+	    if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat
+		HeightMap.at<float>(j,i)=float(minVal);
 	    }
 	}
     }
     cv::minMaxLoc(HeightMap, &minVal, &maxVal);
-    HeightMap = HeightMap*256/maxVal;
+    HeightMap-=minVal;
+    HeightMap.convertTo(HeightMap,CV_8U,255.0/(maxVal-minVal));
+/* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
+    /* HeightMap = HeightMap*256/maxVal; */
 
     HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256
     cv::imwrite(strFileName+"FatLogTransform.png",HeightMap);
 }
 
 int breast::getPixelType(int x, int y){
-    int iType = this->mChenFatClass.at<Uint8>(y,x);
-    if (iType == 1) return XIN_BACKGROUND;
-    if (iType == 2) return XIN_FAT;
-    if (iType == 3) return XIN_PECTORAL_MUSCLE;
-    if (iType == 4) return XIN_GLAND;
-    if (iType == 5) return XIN_NIPPLE;
+    int iType = this->mChenFatClass.at<Uint8>(y,x,0);
+    if (iType == 43) return XIN_BACKGROUND;
+    if (iType == 85) return XIN_FAT;
+    if (iType == 128) return XIN_PECTORAL_MUSCLE;
+    if (iType == 170) return XIN_GLAND;
+    if (iType == 213) return XIN_NIPPLE;
+    if (iType == 255) return XIN_DENSER_GLAND;
     return 0;
 }
 
