@@ -781,10 +781,11 @@ vector<pair<int,int>> breast::pixelOfInterestExposure(){
             peakPos = i;
         }
     }
-    int MPVRangeLimit = (this->LargestImagePixelValue/512)*(peakPos+100);
+    int MPVRangeUpperLimit = (this->LargestImagePixelValue/512)*(peakPos+25);
+    int MPVRangeLowerLimit = (this->LargestImagePixelValue/512)*(peakPos-25);
     for(int i = 0; i < this->mMammo.cols; i++){
          for(int j = 0; j < this->mMammo.rows; j++){
-            if(this->mMammo.at<Uint16>(j,i) < MPVRangeLimit)
+            if(this->mMammo.at<Uint16>(j,i) < MPVRangeUpperLimit && this->mMammo.at<Uint16>(j,i) > MPVRangeLowerLimit)
                 pixelOfInterestExposureVec.push_back(make_pair(j,i));
          }
     }
@@ -832,4 +833,40 @@ void breast::applyExposureCorrestion(map<int,double> breastDistMap){
             this->mMammo.at<Uint16>(j,i) = this->mMammo.at<Uint16>(j,i)*(breastDistMap[distVal]/distAvNext);
          }
     }
+}
+
+void breast::exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec){
+    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
+    int thickness = atoi(bodyThickness.c_str());
+    double tgTemp;
+    for(int i = 0; i < mMammo.cols; i++){
+        for(int j = 0; j < mMammo.rows; j++){
+            if(mMammoROI.at<Uint8>(j,i) != 0){
+                    if(int(mMammo.at<Uint16>(j,i)) == 0){
+                        tgTemp = thickness;
+                    } else{
+                        tgTemp = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                    }
+                    if(tgTemp >= 0 && tgTemp <= thickness){
+                        tg.at<Uint8>(j,i) = tgTemp*double(255/thickness);
+                    } else if(tgTemp > thickness){
+                        tg.at<Uint8>(j,i) = thickness*double(255/thickness);
+                    } else{
+                        tg.at<Uint8>(j,i) = 0;
+                    }
+        }
+    }
+    }
+    cv::Mat dst;
+    cvtColor(tg,dst,CV_GRAY2RGB);
+    cv::Vec3b color;
+    color.val[0] = 0;
+    color.val[1] = 0;
+    color.val[2] = 255;
+    int vecLength  = pixelOfInterestExposureVec.size();
+        for(int j = 0; j < vecLength; j++){
+            dst.at<cv::Vec3b>(cv::Point(pixelOfInterestExposureVec[j].second,pixelOfInterestExposureVec[j].first)) = color;
+        }
+    cv::imwrite("test_exposureMap.png",dst);
 }

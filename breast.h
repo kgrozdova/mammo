@@ -99,6 +99,7 @@ class breast: public mammography, phantomCalibration{
     vector<pair<int,int>> pixelOfInterestExposure();
     map<int,double> distMap(vector<pair<int,int>> pixelOfInterestExposureVec);
     void applyExposureCorrestion(map<int,double> breastDistMap);
+    void exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec);
 
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
