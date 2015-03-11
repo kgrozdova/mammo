@@ -274,6 +274,31 @@ pair<float, float> breast::findHistPeak(){
     return make_pair(iNMax, iBinMax);
 }
 
+pair<float, float> breast::findHistPeakLeft(){
+    float iNMax = 0;
+    float iBinMax = 0;
+    for(int i = this->iHistSize*0.5; i > 0; i--){
+	if(iNMax < mHist.at<float>(i)){
+	    iNMax = mHist.at<float>(i);
+	    iBinMax = i;
+	}
+	}
+    return make_pair(iNMax, iBinMax);
+}
+
+pair<float, float> breast::findHistPeakRight(){
+    float iNMax = 0;
+    float iBinMax = 0;
+    for(int i = this->iHistSize*0.5; i < this->iHistSize; i++){
+	if(iNMax < mHist.at<float>(i)){
+	    iNMax = mHist.at<float>(i);
+	    iBinMax = i;
+	}
+	}
+    return make_pair(iNMax, iBinMax);
+}
+
+
 float breast::findWidth(const int iBinMax, const int iNMax){
     // Find the width at the value with PEAK_VALUE/OL_WIDTH.
     float iQuartMax = 0;
@@ -528,57 +553,6 @@ void breast::drawImages(string fileName, const cv::Mat mCornerTresh, const cv::M
     #endif
 }
 
-//double breast::fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration){
-//    phantomCalibration temp = calibration["lower"];
-//    int sizeArr = temp.dataArr.size();
-//    double x[sizeArr];
-//    double y[sizeArr];
-//    size_t var = 0;
-//    for(auto it:temp.dataArr){
-//        x[var] = it.first;
-//        y[var] = it.second;
-//        var++;
-//    }
-//    pair<double,double> coeff1 = scanner::linearfit(x,y,var);
-//    temp = calibration["higher"];
-//    for(auto it:temp.dataArr){
-//        x[var] = it.first;
-//        y[var] = it.second;
-//        var++;
-//    }
-//    pair<double,double> coeff2 = scanner::linearfit(x,y,var);
-//    double yStep;
-//    if((coeff2.second - coeff1.second) == 0){
-//        yStep = 0;
-//    } else{
-//        yStep = (coeff2.second - coeff1.second)/10;
-//    }
-//    pair<double,double> coeff3;
-//    div_t divresult;
-//    divresult = div(thickness,10);
-//    coeff3.first = (coeff1.first+coeff2.first)/2;
-//    coeff3.second = coeff1.second+ yStep*divresult.rem;
-//    double tg(0);
-//    double tgTemp;
-//    ofstream myfile;
-//    myfile.open ("example2.txt");
-//    for(int i = 0; i < imDat.cols; i++){
-//        for(int j = 0; j < imDat.rows; j++){
-//            if(int(imDat.at<Uint16>(j,i)) == 0){
-//                tgTemp = -coeff3.second/coeff3.first;
-//            } else{
-//                tgTemp = (log(double(imDat.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-//            }
-//            if(tgTemp >= 0){
-//                tg += tgTemp;
-//                myfile << imDat.at<Uint16>(j,i) << " " << tgTemp << "\n";
-//            }
-//        }
-//    }
-//    myfile.close();
-//    return tg;
-//}
-
 double breast::totalBreast(){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
@@ -785,64 +759,103 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
 
 vector<pair<int,int>> breast::pixelOfInterestExposure(){
     vector<pair<int,int>> pixelOfInterestExposureVec;
-    int peakPos, peakVal(0);
-    for(int i = 0; i < this->iHistSize; i++){
-        if(this->mHist.at<Uint16>(i) > peakVal){
-            peakVal = this->mHist.at<Uint16>(i);
-            peakPos = i;
+    pair<float, float> rightPeak = this->findHistPeakRight();
+    pair<float, float> leftPeak = this->findHistPeakLeft();
+    float minVal = leftPeak.first;
+    int rightLim;
+    for(int  i = rightPeak.second; i > leftPeak.second*3.5; i--){
+        if(this->mHist.at<float>(i) < minVal)
+            minVal = this->mHist.at<float>(i);
+    }
+    for(int  i = rightPeak.second; i > leftPeak.second*3.5; i--){
+        if(this->mHist.at<float>(i) == minVal){
+            rightLim = i;
+            break;
         }
     }
-    int MPVRangeUpperLimit = (this->LargestImagePixelValue/512)*(peakPos+25);
-    int MPVRangeLowerLimit = (this->LargestImagePixelValue/512)*(peakPos-25);
+    int MPVRangeUpperLimit = (this->LargestImagePixelValue/512)*(rightLim);
+    int MPVRangeLowerLimit = (this->LargestImagePixelValue/512)*(leftPeak.second*3.5);
     for(int i = 0; i < this->mMammo.cols; i++){
          for(int j = 0; j < this->mMammo.rows; j++){
             if(this->mMammo.at<Uint16>(j,i) < MPVRangeUpperLimit && this->mMammo.at<Uint16>(j,i) > MPVRangeLowerLimit)
                 pixelOfInterestExposureVec.push_back(make_pair(j,i));
          }
     }
+    this->drawHist();
     return pixelOfInterestExposureVec;
 }
 
-map<int,double> breast::distMap(vector<pair<int,int>> pixelOfInterestExposureVec){
-    map<int,double> breastDistMap;
-    map<int,vector<double>> samePixDist;
-    int distVal, vecLength;
+map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>> pixelOfInterestExposureVec){
+    map<int,vector<pair<double,pair<int,int>>>> breastDistMap;
+    int distVal, vecLength, leftBorder, rightBorder, difference;
     double MPVsum, countPix;
-    for(int i = 0; i < this->mMammoDist.cols; i++){
-         for(int j = 0; j < this->mMammoDist.rows; j++){
-            distVal = this->mMammoDist.at<Uint16>(j,i);
-            if(!samePixDist.count(distVal)){
-                vector<double> sameDistPixMPV;
-                samePixDist[distVal] = sameDistPixMPV;
-            }
-            samePixDist[distVal].push_back(this->mMammo.at<Uint16>(j,i));
-         }
+    for(vector<pair<int,int>>::iterator it = pixelOfInterestExposureVec.begin() ; it != pixelOfInterestExposureVec.end(); ++it){
+        distVal = this->mMammoDist.at<Uint16>(it->first,it->second);
+        if(!breastDistMap.count(distVal)){
+            vector<pair<double,pair<int,int>>> breastDistMapVec;
+            breastDistMap[distVal] = breastDistMapVec;
+        }
+        breastDistMap[distVal].push_back(make_pair(0,make_pair(it->first,it->second)));
     }
-    for(map<int,vector<double>>::iterator it = samePixDist.begin() ; it != samePixDist.end(); ++it){
-        MPVsum = 0; countPix = 0;
+    for(map<int,vector<pair<double,pair<int,int>>>>::iterator it = breastDistMap.begin() ; it != breastDistMap.end(); ++it){
         vecLength = it->second.size();
-        for(vector<double>::iterator vec = it->second.begin() ; vec != it->second.end(); ++vec){
-            MPVsum += *vec;
+        for(int i = 0; i < vecLength; i++){
+            MPVsum = 0; countPix = 0;
+            difference = i-90;
+            if(difference < 0){
+                leftBorder = 0;
+            } else{
+                leftBorder = i - 90;
+            }
+            difference = i+90;
+            if(difference > vecLength){
+                rightBorder = vecLength;
+            } else{
+                rightBorder = i + 90;
+            }
+            for(int j = leftBorder; j < rightBorder; j++){
+                MPVsum += this->mMammo.at<Uint16>(it->second[j].second.first,it->second[j].second.second);
+                countPix++;
+            }
+            it->second[i].first = MPVsum/countPix;
+        }
+    }
+    vector<pair<double,pair<int,int>>> breastDistMapVec2;
+    for(int i = 0; i < this->mMammoDist.cols; i++){
+        for(int j = 0; j < this->mMammoDist.rows; j++){
+            distVal = this->mMammoDist.at<Uint16>(j,i);
+            if(distVal == breastDistMap.rbegin()->first+1)
+                breastDistMapVec2.push_back(make_pair(0,make_pair(j,i)));
+        }
+    }
+    vecLength = breastDistMapVec2.size();
+    for(int i = 0; i < vecLength; i++){
+        MPVsum = 0; countPix = 0;
+        difference = i-90;
+        if(difference < 0){
+            leftBorder = 0; rightBorder = i + 90 - difference;
+        } else{
+            leftBorder = i - 90; rightBorder = i + 90;
+        }
+        for(int j = leftBorder; j < rightBorder; j++){
+            MPVsum += this->mMammo.at<Uint16>(breastDistMapVec2[i].second.first,breastDistMapVec2[i].second.second);
             countPix++;
         }
-        breastDistMap[it->first] = MPVsum/countPix;
+        breastDistMapVec2[i].first = MPVsum/countPix;
     }
+    breastDistMap[distVal] = breastDistMapVec2;
     return breastDistMap;
 }
 
-void breast::applyExposureCorrestion(map<int,double> breastDistMap){
+void breast::applyExposureCorrestion(map<int,vector<pair<double,pair<int,int>>>> breastDistMap){
     double distAvNext;
-    int distVal;
-    for(int i = 0; i < this->mMammo.cols; i++){
-         for(int j = 0; j < this->mMammo.rows; j++){
-            distVal = this->mMammoDist.at<Uint16>(j,i);
-            if(breastDistMap.count(distVal+1)){
-                distAvNext = breastDistMap[distVal+1];
-            } else{
-                distAvNext = breastDistMap[distVal-1];
-            }
-            this->mMammo.at<Uint16>(j,i) = this->mMammo.at<Uint16>(j,i)*(breastDistMap[distVal]/distAvNext);
-         }
+    int distVal, vecLength, pixVal;
+    for(map<int,vector<pair<double,pair<int,int>>>>::iterator it = breastDistMap.begin() ; it != breastDistMap.end(); ++it){
+        vecLength = it->second.size();
+        for(int j =  0; j < vecLength; j++){
+            pixVal = this->mMammo.at<Uint16>(it->second[j].second.first, it->second[j].second.second);
+            this->mMammo.at<Uint16>(it->second[j].second.first, it->second[j].second.second) =  pixVal*(it->second[j-1].first/it->second[j].first);
+        }
     }
 }
 

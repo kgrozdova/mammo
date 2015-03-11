@@ -47,6 +47,8 @@ class breast: public mammography, phantomCalibration{
 	void getBreastDistMap();
 	void getBreastEdge();
 	std::pair<float, float> findHistPeak();
+    std::pair<float, float> findHistPeakLeft();
+	std::pair<float, float> findHistPeakRight();
 
     public:
 
