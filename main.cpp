@@ -4,6 +4,8 @@
 #include <map>
 #include <iterator>
 #include <vector>
+
+/* #define KSENIA_STUFF */
 typedef map< string, phantomCalibration> calibData;
 
 int main(int argc, char** argv){
@@ -103,9 +105,10 @@ int main(int argc, char** argv){
     // DRAWING THE PICTURES
     //
 
-    /* cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl; */
-    /* cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl; */
-    /* breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize); */
+#ifdef KSENIA_STUFF
+    cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
+    cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
+    breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
 
      string KVP = various::ToString<OFString>(breastDat.KVP);
      string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);
@@ -159,4 +162,5 @@ int main(int argc, char** argv){
 
     /* breastDat.thicknessMapRedValBorder(coeff3, exposure, borderShape); */
     breastDat.thicknessMap(coeff3, exposure);
+#endif
 }

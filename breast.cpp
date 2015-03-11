@@ -700,7 +700,7 @@ void breast::makeXinROIMap(){
     cv::cvtColor(HeightMap,HeightMapRGB,CV_GRAY2RGB);
     for(int i = 0; i < HeightMapRGB.cols; i++){
 	for(int j = 0; j < HeightMapRGB.rows; j++){
-	    HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_BACKGROUND)?255:0;
+	    HeightMapRGB.at<uchar>(j,i,1) = ((this->getPixelType(i,j) == XIN_BACKGROUND) || (this->getPixelType(i,j) == XIN_FAT))?255:0;
 	}
     }
     cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB);
@@ -757,6 +757,7 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
     /* cv::imwrite("test_thickMapRedBorder.png",dst); */
 }
 
+#ifdef KSENIA_STUFF
 vector<pair<int,int>> breast::pixelOfInterestExposure(){
     vector<pair<int,int>> pixelOfInterestExposureVec;
     pair<float, float> rightPeak = this->findHistPeakRight();
@@ -858,6 +859,7 @@ void breast::applyExposureCorrestion(map<int,vector<pair<double,pair<int,int>>>>
         }
     }
 }
+#endif
 
 void breast::exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec){
     cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
