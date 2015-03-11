@@ -700,7 +700,8 @@ void breast::makeXinROIMap(){
     cv::cvtColor(HeightMap,HeightMapRGB,CV_GRAY2RGB);
     for(int i = 0; i < HeightMapRGB.cols; i++){
 	for(int j = 0; j < HeightMapRGB.rows; j++){
-	    HeightMapRGB.at<uchar>(j,i,1) = ((this->getPixelType(i,j) == XIN_BACKGROUND) || (this->getPixelType(i,j) == XIN_FAT))?255:0;
+	    HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_FAT)?255:0;
+	    HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_BACKGROUND)?128:0;
 	}
     }
     cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB);
