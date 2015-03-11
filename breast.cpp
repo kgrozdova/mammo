@@ -719,6 +719,17 @@ void breast::makeXinROIMap(){
 
     HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256
     cv::imwrite(strFileName+"FatLogTransform.png",HeightMap);
+
+    /* Make a second, three channel, map that distinguishes between background / not background */
+    cv::Mat HeightMapRGB;
+    /* HeightMap.convertTo(HeightMapRGB, CV_8UC3); */
+    cv::cvtColor(HeightMap,HeightMapRGB,CV_GRAY2RGB);
+    for(int i = 0; i < HeightMapRGB.cols; i++){
+	for(int j = 0; j < HeightMapRGB.rows; j++){
+	    HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_BACKGROUND)?255:0;
+	}
+    }
+    cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB);
 }
 
 int breast::getPixelType(int x, int y){

@@ -38,7 +38,7 @@ int main(int argc, char** argv){
     //
     // SEPERATING THE BREAST FROM THE BACKGROUND
     //
-    int histSize = 255;
+    /* int histSize = 255; */
 
     //
     //FINDING THE CONTOUR WHICH THE DESRIBES THE EDGE OF THE BREAST
@@ -103,59 +103,59 @@ int main(int argc, char** argv){
     // DRAWING THE PICTURES
     //
 
-    cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
-    cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
-    breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
+    /* cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl; */
+    /* cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl; */
+    /* breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize); */
 
-    string KVP = various::ToString<OFString>(breastDat.KVP);
-    string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);
-    string Exposure = various::ToString<long>(breastDat.Exposure);
-     double thickness = atoi(bodyThickness.c_str());
-     int exposure = atoi(Exposure.c_str());
-    vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
-    map<int,double> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
-    breastDat.applyExposureCorrestion(breastDistMap);
+    /* string KVP = various::ToString<OFString>(breastDat.KVP); */
+    /* string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness); */
+    /* string Exposure = various::ToString<long>(breastDat.Exposure); */
+    /*  double thickness = atoi(bodyThickness.c_str()); */
+    /*  int exposure = atoi(Exposure.c_str()); */
+    /* vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure(); */
+    /* map<int,double> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec); */
+    /* breastDat.applyExposureCorrestion(breastDistMap); */
 
-    dailyCalibration dcalib;
-    dcalib.insertFilTar(breastDat);
-    dcalib.InserQcTTg(breastDat, "qc.dat");
-    phantomCalibration calib;
-    calib.getThicknessData(dcalib.filTar, atoi(KVP.c_str()));
+    /* dailyCalibration dcalib; */
+    /* dcalib.insertFilTar(breastDat); */
+    /* dcalib.InserQcTTg(breastDat, "qc.dat"); */
+    /* phantomCalibration calib; */
+    /* calib.getThicknessData(dcalib.filTar, atoi(KVP.c_str())); */
 
-     pair<double,double> coeff3;
-     double tg(0);
-     double tgTemp;
-      ofstream myfile;
-      myfile.open ("example2.txt");
-      int num(0);
-      for(int i = 0; i < breastDat.mMammo.cols; i++){
-          for(int j = 0; j < breastDat.mMammo.rows; j++){
-              if(breastDat.isBreast(j,i)){
-                  //thickness = breastDat.getHeight(j, i);
-                  coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, thickness);
-                  if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
-                      tgTemp = thickness;
-                  } else{
-                         tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                  }
-                  if(tgTemp >= 0 && tgTemp <= thickness){
-                      tg += tgTemp;
-                  }else if(tgTemp > thickness){
-                      tg += thickness;
-                  } else{
-                      tg += 0;
-                  }
-                  myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
-                  num++;
-              }
-          }
-      }
-      cout << num << endl;
-      myfile.close();
-      double t = breastDat.totalBreast();
-      breastDat.thicknessMap(coeff3, exposure);
-      breastDat.thicknessMapRedVal(coeff3, exposure);
-      cout << tg/t*100 << endl;
+    /*  pair<double,double> coeff3; */
+    /*  double tg(0); */
+    /*  double tgTemp; */
+    /*   ofstream myfile; */
+    /*   myfile.open ("example2.txt"); */
+    /*   int num(0); */
+    /*   for(int i = 0; i < breastDat.mMammo.cols; i++){ */
+    /*       for(int j = 0; j < breastDat.mMammo.rows; j++){ */
+    /*           if(breastDat.isBreast(j,i)){ */
+    /*               //thickness = breastDat.getHeight(j, i); */
+    /*               coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, thickness); */
+    /*               if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){ */
+    /*                   tgTemp = thickness; */
+    /*               } else{ */
+    /*                      tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first; */
+    /*               } */
+    /*               if(tgTemp >= 0 && tgTemp <= thickness){ */
+    /*                   tg += tgTemp; */
+    /*               }else if(tgTemp > thickness){ */
+    /*                   tg += thickness; */
+    /*               } else{ */
+    /*                   tg += 0; */
+    /*               } */
+    /*               myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n"; */
+    /*               num++; */
+    /*           } */
+    /*       } */
+    /*   } */
+    /*   cout << num << endl; */
+    /*   myfile.close(); */
+    /*   double t = breastDat.totalBreast(); */
+    /*   breastDat.thicknessMap(coeff3, exposure); */
+    /*   breastDat.thicknessMapRedVal(coeff3, exposure); */
+    /*   cout << tg/t*100 << endl; */
 
     /* breastDat.thicknessMapRedValBorder(coeff3, exposure, borderShape); */
 }
