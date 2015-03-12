@@ -30,7 +30,7 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
     if(bLeft){
     this->getBreastBottom();
     this->getRadialThickness();
-    this->makeXinROIMap();
+    //this->makeXinROIMap();
     }
 }
 
@@ -605,7 +605,7 @@ void breast::thicknessMap(const pair<double,double> coeff3, const int exposure){
         }
     }
     }
-    /* cv::imwrite("test_thickMap.png",tg); */
+     cv::imwrite("test_thickMap.png",tg);
 }
 
 void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int exposure){
@@ -757,7 +757,7 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
     /* cv::imwrite("test_thickMapRedBorder.png",dst); */
 }
 
-#ifdef KSENIA_STUFF
+//#ifdef KSENIA_STUFF
 vector<pair<int,int>> breast::pixelOfInterestExposure(){
     vector<pair<int,int>> pixelOfInterestExposureVec;
     pair<float, float> rightPeak = this->findHistPeakRight();
@@ -791,7 +791,7 @@ map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>
     int distVal, vecLength, leftBorder, rightBorder, difference;
     double MPVsum, countPix;
     for(vector<pair<int,int>>::iterator it = pixelOfInterestExposureVec.begin() ; it != pixelOfInterestExposureVec.end(); ++it){
-        distVal = this->mMammoDist.at<Uint16>(it->first,it->second);
+        distVal = this->mMammoDist.at<uchar>(it->first,it->second);
         if(!breastDistMap.count(distVal)){
             vector<pair<double,pair<int,int>>> breastDistMapVec;
             breastDistMap[distVal] = breastDistMapVec;
@@ -802,17 +802,17 @@ map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>
         vecLength = it->second.size();
         for(int i = 0; i < vecLength; i++){
             MPVsum = 0; countPix = 0;
-            difference = i-90;
+            difference = i-1000;
             if(difference < 0){
                 leftBorder = 0;
             } else{
-                leftBorder = i - 90;
+                leftBorder = i - 1000;
             }
-            difference = i+90;
+            difference = i+1000;
             if(difference > vecLength){
                 rightBorder = vecLength;
             } else{
-                rightBorder = i + 90;
+                rightBorder = i + 1000;
             }
             for(int j = leftBorder; j < rightBorder; j++){
                 MPVsum += this->mMammo.at<Uint16>(it->second[j].second.first,it->second[j].second.second);
@@ -824,20 +824,27 @@ map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>
     vector<pair<double,pair<int,int>>> breastDistMapVec2;
     for(int i = 0; i < this->mMammoDist.cols; i++){
         for(int j = 0; j < this->mMammoDist.rows; j++){
-            distVal = this->mMammoDist.at<Uint16>(j,i);
+            distVal = this->mMammoDist.at<uchar>(j,i);
             if(distVal == breastDistMap.rbegin()->first+1)
                 breastDistMapVec2.push_back(make_pair(0,make_pair(j,i)));
         }
     }
+    distVal = breastDistMap.rbegin()->first+1;
     vecLength = breastDistMapVec2.size();
     for(int i = 0; i < vecLength; i++){
         MPVsum = 0; countPix = 0;
-        difference = i-90;
-        if(difference < 0){
-            leftBorder = 0; rightBorder = i + 90 - difference;
-        } else{
-            leftBorder = i - 90; rightBorder = i + 90;
-        }
+            difference = i-1000;
+            if(difference < 0){
+                leftBorder = 0;
+            } else{
+                leftBorder = i - 1000;
+            }
+            difference = i+1000;
+            if(difference > vecLength){
+                rightBorder = vecLength;
+            } else{
+                rightBorder = i + 1000;
+            }
         for(int j = leftBorder; j < rightBorder; j++){
             MPVsum += this->mMammo.at<Uint16>(breastDistMapVec2[i].second.first,breastDistMapVec2[i].second.second);
             countPix++;
@@ -848,18 +855,31 @@ map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>
     return breastDistMap;
 }
 
-void breast::applyExposureCorrestion(map<int,vector<pair<double,pair<int,int>>>> breastDistMap){
+void breast::applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>> breastDistMap){
     double distAvNext;
-    int distVal, vecLength, pixVal;
-    for(map<int,vector<pair<double,pair<int,int>>>>::iterator it = breastDistMap.begin() ; it != breastDistMap.end(); ++it){
-        vecLength = it->second.size();
-        for(int j =  0; j < vecLength; j++){
-            pixVal = this->mMammo.at<Uint16>(it->second[j].second.first, it->second[j].second.second);
-            this->mMammo.at<Uint16>(it->second[j].second.first, it->second[j].second.second) =  pixVal*(it->second[j-1].first/it->second[j].first);
+    int distVal, vecLength1, vecLength2, pixVal;
+    map<int,vector<pair<double,pair<int,int>>>>::iterator it;
+    vector<pair<pair<int,int>,double>> correctedMPVs;
+    it = breastDistMap.begin();
+    int minKey = it->first;
+    it = breastDistMap.end();
+    int maxKey = it->first;
+    for(int i = (maxKey-1); i >= minKey; i--){
+        vecLength1 = breastDistMap[i].size();
+        vecLength2 = breastDistMap[i+1].size();
+        for(int j =  0; j < vecLength1; j++){
+            if(vecLength2 != 0){
+                pixVal = this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second);
+                if(j < vecLength2){
+                    this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second) =  pixVal*(breastDistMap[i+1][j].first/breastDistMap[i][j].first);
+                } else{
+                    this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second) =  pixVal*(breastDistMap[i+1][vecLength2].first/breastDistMap[i][vecLength2].first);
+                }
+            }
         }
     }
 }
-#endif
+
 
 void breast::exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec){
     cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
@@ -896,3 +916,5 @@ void breast::exposureMap(const pair<double,double> coeff3, const int exposure, c
         }
     cv::imwrite("test_exposureMap.png",dst);
 }
+
+//#endif

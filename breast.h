@@ -80,7 +80,7 @@ class breast: public mammography, phantomCalibration{
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
         double totalBreast();
         static pair<double,double> glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t);
-        void thicknessMap(const std::pair<double,double> coeff3, const int exposure);
+        void thicknessMap(const pair<double,double> coeff3, const int exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 
 	// THICKNESS RELATED STUFF
@@ -99,8 +99,8 @@ class breast: public mammography, phantomCalibration{
     void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> contactBorderShapeVal);
 
     vector<pair<int,int>> pixelOfInterestExposure();
-    map<int,double> distMap(vector<pair<int,int>> pixelOfInterestExposureVec);
-    void applyExposureCorrestion(map<int,double> breastDistMap);
+    map<int,vector<pair<double,pair<int,int>>>> distMap(vector<pair<int,int>> pixelOfInterestExposureVec);
+    void applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>> breastDistMap);
     void exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec);
 
 	// DEPRECATED STUFF?
