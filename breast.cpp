@@ -30,7 +30,7 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
     if(bLeft){
     this->getBreastBottom();
     this->getRadialThickness();
-    //this->makeXinROIMap();
+    this->makeXinROIMap();
     }
 }
 
