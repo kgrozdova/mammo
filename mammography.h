@@ -13,7 +13,7 @@
 class mammography: public various{
     public:
         long XRayTubeCurrent, Exposure, Rows, Columns, BitsAllocated, PixelRepresentation, SmallestImagePixelValue, LargestImagePixelValue, BitsStored;
-        OFString KVP, BodyPartThickness, CompressionForce, Filter, Target;
+        OFString KVP, BodyPartThickness, CompressionForce, Filter, Target, ViewPosition, ImageLaterality;
 	std::vector<Uint16> pixelVec;
 	std::string strFileName;
     public:

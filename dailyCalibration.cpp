@@ -36,10 +36,8 @@ void dailyCalibration::InserQcTTg(mammography mammData, const string fileName){
         istringstream k(tStr);
         k >> t;
         tgStr = str.substr(found2+1, sizeStr-found2);
-        cout << tgStr << endl;
         istringstream l(tgStr);
         l >> tg;
-        cout << tg << " " << qc_ln_MPV_mAs << endl;
     }
 }
 

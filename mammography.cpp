@@ -48,6 +48,12 @@ void mammography::loadHeaderData(const std::string fileName){
         if (fileformat.getDataset()->findAndGetLongInt(DCM_BitsStored, BitsStored).good()){
         }else
             std::cerr << "Error: cannot access BitsStored!" << std::endl;
+        if (fileformat.getDataset()->findAndGetOFString(DCM_ViewPosition, ViewPosition).good()){
+        }else
+            std::cerr << "Error: cannot access ViewPosition!" << std::endl;
+        if (fileformat.getDataset()->findAndGetOFString(DCM_ImageLaterality, ImageLaterality).good()){
+        }else
+            std::cerr << "Error: cannot access ImageLaterality!" << std::endl;
      }
 }
 
