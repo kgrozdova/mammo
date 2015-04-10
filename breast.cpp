@@ -726,19 +726,37 @@ void breast::makeXinROIMap(){
     // Take weighted average of neighbouring true non-zero pixels lying on distance transform.
     // Can find true non-zero via making copy of image and writing to original
     //
-    cv::Mat HeightMapCopy = HeightMap.clone();
+    cv::Mat HeightMapCopy = HeightMapFilled.clone();
     for(int i = 0; i < HeightMap.cols; i++){
 	for(int j = 0; j < HeightMap.rows; j++){
-	    if(HeightMapCopy.at<float>(j,i) == 0){
 		/* If there's really an unfilled spot there */
-		if(this->getPixelType(i,j)!=XIN_FAT){
-		    bool bUnfilled = true;
-		    cv::Point pNeighbour = cv::Point(i,j);
-		    while(bUnfilled){
-			pNeighbour = this->findNeighboursOnDistance(pNeighbour);
-			bUnfilled = (HeightMapCopy.at<float>(pNeighbour) == 0);
+	    int pType = this->getPixelType(i,j);
+	    if((pType != XIN_FAT) && (pType != XIN_BACKGROUND)){
+		if(HeightMapCopy.at<uchar>(j,i) == 0){
+
+		    int dXd = 0;
+		    int dXu = 0;
+		    while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){
+			if(i+ ++dXu >= this->mMammoDist.cols - 1) break;
 		    }
-		    HeightMap.at<float>(j,i) = HeightMapCopy.at<float>(pNeighbour);
+		    while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){
+			if(i+ --dXd <= 0) break;
+		    }
+		    float lWeight = float(HeightMapCopy.at<uchar>(j,i+dXd))*abs(1/float(dXd));
+		    float rWeight = float(HeightMapCopy.at<uchar>(j,i+dXu))*abs(1/float(dXu));
+		    HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd)));
+		    /* HeightMapFilled.at<uchar>(j,i) = cWAv; */
+		    // COMPLICATED STUFF - FIND NEIGHBOUR AT SAME DISTANCE
+		    /* bool bUnfilled = true; */
+		    /* cv::Point pNeighbour = cv::Point(i,j); */
+		    /* int iCycles = 0; */
+		    /* while((bUnfilled) && (iCycles < 5)){ */
+			/* pNeighbour = this->findNeighboursOnDistance(pNeighbour); */
+			/* iCycles++; */
+			/* bUnfilled = (HeightMapCopy.at<uchar>(pNeighbour) == 0); */
+			/* /1* bUnfilled = false; *1/ */
+		    /* } */
+		    /* HeightMapFilled.at<uchar>(j,i) = HeightMapCopy.at<uchar>(pNeighbour); */
 		    /* Magically fill it in */
 		    /* Look at pixels above and below until distance changes*/
 		    /* Then go left / right until distance is same */
@@ -748,6 +766,10 @@ void breast::makeXinROIMap(){
 	    }
 	}
     }
+    /* mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25)); */
+    /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE); */
+    /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
+    cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
 }
 
 // Currently finds the lower neighbour only.
@@ -760,13 +782,13 @@ cv::Point breast::findNeighboursOnDistance(cv::Point p){
     int dX = 0;
     bool bDistChange = false;
     while(!bDistChange){
-	dY++;
+	if(y+ ++dY > this->mMammoDist.rows) break;
 	bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x));
     }
     float fYDiff = this->mMammoDist.at<float>(y+dY,x) - fDist; // If dist decreases, neg
     bool bDistRightDir = true;
     while(bDistRightDir){
-	dX++;
+	if(x+ ++dX > this->mMammoDist.rows) break;
 	bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0);
     }
     bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x+dX));
@@ -774,6 +796,7 @@ cv::Point breast::findNeighboursOnDistance(cv::Point p){
 	dX = 0;
 	while(bDistRightDir){
 	    dX--;
+	    if(x+ ++dX < 0 ) break;
 	    bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0);
 	}
     }
@@ -841,7 +864,7 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
     /* cv::imwrite("test_thickMapRedBorder.png",dst); */
 }
 
-//#ifdef KSENIA_STUFF
+#ifdef KSENIA_STUFF
 vector<pair<int,int>> breast::pixelOfInterestExposure(){
     vector<pair<int,int>> pixelOfInterestExposureVec;
     pair<float, float> rightPeak = this->findHistPeakRight();
@@ -1001,4 +1024,4 @@ void breast::exposureMap(const pair<double,double> coeff3, const int exposure, c
     cv::imwrite("test_exposureMap.png",dst);
 }
 
-//#endif
+#endif
