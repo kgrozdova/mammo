@@ -656,8 +656,11 @@ void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int expo
 double breast::getHeight(int x, int y){
     // Radial thickness model:
     // First, we need to find the distance of the pixel from the breast edge.
-    int iDistance = this->mMammoDist.at<uchar>(y,x);
-    return double(vecDistBrightBrightest[iDistance]);
+    /* int iDistance = this->mMammoDist.at<uchar>(y,x); */
+    /* return double(vecDistBrightBrightest[iDistance]); */
+
+    // Equivalent-log-fat model
+    return double(this->mHeightMap.at<uchar>(y,x));
 }
 
 bool breast::isFat(int x, int y){
@@ -770,6 +773,7 @@ void breast::makeXinROIMap(){
     /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE); */
     /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
+    this->mHeightMap = HeightMapFilled;
 }
 
 // Currently finds the lower neighbour only.

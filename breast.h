@@ -65,6 +65,7 @@ class breast: public mammography, phantomCalibration{
 	cv::Mat mMammo8BitNorm;
 	cv::Mat mMammoDistImage;
 	cv::Mat mMammoFatROI;
+	cv::Mat mHeightMap;
 	Uint32 dMeanBackgroundValue = 0;
 
 	// Functions
