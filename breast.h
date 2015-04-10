@@ -34,6 +34,7 @@ class breast: public mammography, phantomCalibration{
 	std::vector<cv::Point> vecContCents;
 	std::vector<float> vecDistBright;
 	std::vector<float> vecDistBrightBrightest;
+	cv::Point findNeighboursOnDistance(cv::Point p);
 	cv::Mat mChenFatClass;
 	double dMaxPixelValue;
 	double dMinPixelValue;

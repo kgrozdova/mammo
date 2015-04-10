@@ -22,6 +22,9 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
     this->getBreastROI();
     this->getBreastDistMap();
     this->getBreastEdge();
+    
+    // NEED TO REPLACE THIS WITH LEFT/RIGHT FROM DCM HEADER
+    // Then just flip all images to be left.
     this->leftOrRight();    // Needs to go after getBreastEdge
 			    // We need to replace all these things with
 			    // functions that automatically calculate
@@ -705,7 +708,87 @@ void breast::makeXinROIMap(){
 	}
     }
     cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB);
+
+
+    // FILLING IN HOLES IN FAT MAP
+    // Morphological closing: remove noise, fill in small holes
+	// Need to swap this for opening otherwise we will propagate noise!
+	// Could perform opening on whole log-transformed image then colour in holes
+    cv::Mat mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25));
+    cv::Mat HeightMapFilled;
+    cv::morphologyEx(HeightMap,HeightMapFilled,cv::MORPH_CLOSE,mCircSE);
+    /* cv::GaussianBlur(HeightMapFilled,HeightMapFilled,cv::Size(5,5),10); */
+    cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled);
+
+    // Next step: identify remaining holes and fill them in, one by one.
+    // Proposed Procedure:
+    // For each "zero height" glandular pixel:
+    // Take weighted average of neighbouring true non-zero pixels lying on distance transform.
+    // Can find true non-zero via making copy of image and writing to original
+    //
+    cv::Mat HeightMapCopy = HeightMap.clone();
+    for(int i = 0; i < HeightMap.cols; i++){
+	for(int j = 0; j < HeightMap.rows; j++){
+	    if(HeightMapCopy.at<float>(j,i) == 0){
+		/* If there's really an unfilled spot there */
+		if(this->getPixelType(i,j)!=XIN_FAT){
+		    bool bUnfilled = true;
+		    cv::Point pNeighbour = cv::Point(i,j);
+		    while(bUnfilled){
+			pNeighbour = this->findNeighboursOnDistance(pNeighbour);
+			bUnfilled = (HeightMapCopy.at<float>(pNeighbour) == 0);
+		    }
+		    HeightMap.at<float>(j,i) = HeightMapCopy.at<float>(pNeighbour);
+		    /* Magically fill it in */
+		    /* Look at pixels above and below until distance changes*/
+		    /* Then go left / right until distance is same */
+		    /* Keep doing this until we find filled in one */
+			/* Peformance: store values of edge pixels? */
+		}
+	    }
+	}
+    }
 }
+
+// Currently finds the lower neighbour only.
+cv::Point breast::findNeighboursOnDistance(cv::Point p){
+    int x = p.x;
+    int y = p.y;
+    float fDist = this->mMammoDist.at<float>(y,x);
+    // Go up until distance changes
+    int dY = 0;
+    int dX = 0;
+    bool bDistChange = false;
+    while(!bDistChange){
+	dY++;
+	bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x));
+    }
+    float fYDiff = this->mMammoDist.at<float>(y+dY,x) - fDist; // If dist decreases, neg
+    bool bDistRightDir = true;
+    while(bDistRightDir){
+	dX++;
+	bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0);
+    }
+    bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x+dX));
+    if(bDistChange){
+	dX = 0;
+	while(bDistRightDir){
+	    dX--;
+	    bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0);
+	}
+    }
+    return cv::Point(x+dX,y+dY);
+}
+
+/* float breast::findNeighbourLoopXUp(int x, int y, float fDist){ */
+/*     int dX = 0; */
+/*     bool bDistChange = true; */
+/*     while(bDistChange){ */
+/* 	dX++; */
+/* 	bDistChange = (fDist == this->mMammoDist.at<float>(y,x+dX)); */
+/*     } */
+/*     return this->mMammoDist.at<float>(y,x+dX) - fDist; // If dist decreases, neg */
+/* } */
 
 int breast::getPixelType(int x, int y){
     int iType = this->mChenFatClass.at<Uint8>(y,x,0);
