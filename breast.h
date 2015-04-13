@@ -12,6 +12,8 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include "stdafx.h"
+#include "interpolation.h"
 
 
 #define XIN_BACKGROUND 1
@@ -98,13 +100,28 @@ class breast: public mammography, phantomCalibration{
 	void makeXinROIMap();
 	int getPixelType(int x, int y); // What type is a pixel?
 
-    void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> contactBorderShapeVal);
+    void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<cv::Point> contactBorderShapeVal);
 
     vector<pair<int,int>> pixelOfInterestExposure();
     map<int,vector<pair<double,pair<int,int>>>> distMap(vector<pair<int,int>> pixelOfInterestExposureVec);
     void applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>> breastDistMap);
     void exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec);
 
+    string heightRowArray(const int row, const string xOrY);
+    pair<cv::Point,float> straightLevel(const int row);
+    vector<cv::Point> contactBorder();
+    double averageDiffBorder(const vector<cv::Point> contactBorder);
+    vector<cv::Point> breastBorder();
+    vector<cv::Point> contactBorderFinal(const vector<cv::Point> contactBorderVal, vector<cv::Point> breastBorderVal, const double averageDiffBorderVal);
+    vector<cv::Point> contactBorder2(const float* m);
+    vector<cv::Point> contactBorderFinalIt2(vector<cv::Point> contactBorderValFin, const double averageDiffBorderVal);
+    vector<cv::Point> getContact();
+    vector<cv::Point> pointsDiscard(vector<cv::Point> breastFatPoints);
+    float* fitPlane(vector<cv::Point> breastFatDiscarded);
+    void fatRow(const int row);
+    static double getPlaneAngle(const float* plane);
+    double averageDistance(const float* plane, vector<cv::Point> breastFatDiscarded);
+    vector<cv::Point> contactBorder2(const float* plane, vector<cv::Point> breastFatDiscarded);
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
 };

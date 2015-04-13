@@ -8,6 +8,7 @@
  /* #define KSENIA_STUFF */
 typedef map< string, phantomCalibration> calibData;
 
+
 int main(int argc, char** argv){
     string strCmdName = argv[0];
     if(argc != 2){
@@ -32,7 +33,6 @@ int main(int argc, char** argv){
     //	#define OL_DRAW_DISTMAP
     //	#define OL_DRAW_CORNER
     #endif
-
     breast breastDat = breast(strFileName);
     strFileName = breast::fileNameErase(strFileName);
     /* int iColourMax = breastDat.getBitDepth(); */
@@ -104,10 +104,9 @@ int main(int argc, char** argv){
     //
     // DRAWING THE PICTURES
     //
-
-#ifdef KSENIA_STUFF
-    cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
-    cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
+//#ifdef KSENIA_STUFF
+    //cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
+    //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     //breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
 
      string KVP = various::ToString<OFString>(breastDat.KVP);
@@ -115,10 +114,9 @@ int main(int argc, char** argv){
      string Exposure = various::ToString<long>(breastDat.Exposure);
       double thickness = atoi(bodyThickness.c_str());
       int exposure = atoi(Exposure.c_str());
-    vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
-    map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
-    breastDat.applyExposureCorrection(breastDistMap);
-
+    //vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
+    //map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
+    //breastDat.applyExposureCorrection(breastDistMap);
      dailyCalibration dcalib;
      dcalib.insertFilTar(breastDat);
      dcalib.InserQcTTg(breastDat, "qc.dat");
@@ -153,13 +151,13 @@ int main(int argc, char** argv){
                }
            }
        }
-       cout << num << endl;
        myfile.close();
        double t = breastDat.totalBreast();
        breastDat.thicknessMap(coeff3, exposure);
        breastDat.thicknessMapRedVal(coeff3, exposure);
-       cout << tg/t*100 << endl;
+       //cout << tg/t*100 << endl;
+    vector<cv::Point> contactBorder = breastDat.getContact();
+    breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
 
-    /* breastDat.thicknessMapRedValBorder(coeff3, exposure, borderShape); */
-#endif
+//#endif
 }
