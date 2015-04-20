@@ -752,7 +752,7 @@ void breast::makeXinROIMap(){
     /* mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25)); */
     /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE); */
     /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
-    /* cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled); */
+    cv::imwrite(strFileName+"FatLogClosed.png",HeightMapFilled);
     /* this->mHeightMap = HeightMapFilled; */
 
     /* Next step: Distance transform stuff */
