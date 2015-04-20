@@ -711,17 +711,22 @@ void breast::makeXinROIMap(){
 	    if((pType != XIN_FAT) && (pType != XIN_BACKGROUND)){
 		if(HeightMapCopy.at<uchar>(j,i) == 0){
 
-		    int dXd = 0;
-		    int dXu = 0;
-		    while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){
-			if(i+ ++dXu >= this->mMammoDist.cols - 1) break;
-		    }
-		    while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){
-			if(i+ --dXd <= 0) break;
-		    }
-		    float lWeight = float(HeightMapCopy.at<uchar>(j,i+dXd))*abs(1/float(dXd));
-		    float rWeight = float(HeightMapCopy.at<uchar>(j,i+dXu))*abs(1/float(dXu));
-		    HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd)));
+		    // LINEAR AVERAGING GOES HERE
+
+		    /* int dXd = 0; */
+		    /* int dXu = 0; */
+		    /* while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){ */
+			/* if(i+ ++dXu >= this->mMammoDist.cols - 1) break; */
+		    /* } */
+		    /* while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){ */
+			/* if(i+ --dXd <= 0) break; */
+		    /* } */
+		    /* float lWeight = float(HeightMapCopy.at<uchar>(j,i+dXd))*abs(1/float(dXd)); */
+		    /* float rWeight = float(HeightMapCopy.at<uchar>(j,i+dXu))*abs(1/float(dXu)); */
+		    /* HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd))); */
+
+		    HeightMapFilled.at<uchar>(j,i)=HeightMapCopy.at<uchar>(this->findNeighboursOnDistance(cv::Point(i,j)));
+
 		    /* HeightMapFilled.at<uchar>(j,i) = cWAv; */
 		    // COMPLICATED STUFF - FIND NEIGHBOUR AT SAME DISTANCE
 		    /* bool bUnfilled = true; */
@@ -748,37 +753,77 @@ void breast::makeXinROIMap(){
     /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
     this->mHeightMap = HeightMapFilled;
+
+    /* Next step: Distance transform stuff */
+    /* Want to create a vector of points at each distance i.e. vecDist[100] is all the points 100 away */
+
+    /* vector<vector<cv::Point>> vecPatD; */
+    /* vecPatD.resize(256); */
+    /* for(int i = 0; i < mMammoDist.rows; i++){ */
+	/* for(int j = 0; j < mMammoDist.rows; j++){ */
+	    /* vecPatD[mMammoDist.at<uchar>(j,i)].push_back(cv::Point(i,j)); */
+	/* } */
+    /* } */
+    /* /1* for(auto &i:vecPatD[100]){ *1/ */
+	    /* /1* cout << i; *1/ */
+    /* /1* } *1/ */
+    /* this->vecPointsAtDist = vecPatD; */
+    /* cout << "Started" << flush; */
+    /* cout << findNeighboursOnDistance(cv::Point(200,200)); */
 }
 
 // Currently finds the lower neighbour only.
 cv::Point breast::findNeighboursOnDistance(cv::Point p){
-    int x = p.x;
-    int y = p.y;
-    float fDist = this->mMammoDist.at<float>(y,x);
-    // Go up until distance changes
-    int dY = 0;
-    int dX = 0;
-    bool bDistChange = false;
-    while(!bDistChange){
-	if(y+ ++dY > this->mMammoDist.rows) break;
-	bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x));
-    }
-    float fYDiff = this->mMammoDist.at<float>(y+dY,x) - fDist; // If dist decreases, neg
-    bool bDistRightDir = true;
-    while(bDistRightDir){
-	if(x+ ++dX > this->mMammoDist.rows) break;
-	bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0);
-    }
-    bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x+dX));
-    if(bDistChange){
-	dX = 0;
-	while(bDistRightDir){
-	    dX--;
-	    if(x+ ++dX < 0 ) break;
-	    bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0);
+    /* vector<cv::Point> vecPatD = vecPointsAtDist[this->mMammoDist.at<uchar>(p)]; */
+    vector<cv::Point> vecPatD;
+    int lBound = max(p.x-200,0);
+    int rBound = min(p.x+200,mMammoDist.cols);
+    int uBound = max(p.y-200,0);
+    int dBound = min(p.y+200,mMammoDist.rows);
+    uchar cDist = this->mMammoDist.at<uchar>(p);
+    for(int i = lBound; i < rBound; i++){
+	for(int j = uBound; j < dBound; j++){
+	    if((this->mMammoDist.at<uchar>(j,i) == cDist) && (this->getPixelType(i,j)==XIN_FAT)){
+		vecPatD.push_back(cv::Point(i,j));
+	    }
 	}
     }
-    return cv::Point(x+dX,y+dY);
+    sort(vecPatD.begin(),vecPatD.end(),[&](const cv::Point &l, const cv::Point &r){return cv::norm(l-p) < cv::norm(r-p);});
+    /* cv::Point result; */
+    /* for(auto &i:vecPatD){ */
+	/* if(this->getPixelType(i.x,i.y)==XIN_FAT){ */
+	    /* result = i; */
+	    /* break; */
+	/* } */
+    /* } */
+    /* int x = p.x; */
+    /* int y = p.y; */
+    /* float fDist = this->mMammoDist.at<float>(y,x); */
+    /* // Go up until distance changes */
+    /* int dY = 0; */
+    /* int dX = 0; */
+    /* bool bDistChange = false; */
+    /* while(!bDistChange){ */
+	/* if(y+ ++dY > this->mMammoDist.rows) break; */
+	/* bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x)); */
+    /* } */
+    /* float fYDiff = this->mMammoDist.at<float>(y+dY,x) - fDist; // If dist decreases, neg */
+    /* bool bDistRightDir = true; */
+    /* while(bDistRightDir){ */
+	/* if(x+ ++dX > this->mMammoDist.rows) break; */
+	/* bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0); */
+    /* } */
+    /* bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x+dX)); */
+    /* if(bDistChange){ */
+	/* dX = 0; */
+	/* while(bDistRightDir){ */
+	    /* dX--; */
+	    /* if(x+ ++dX < 0 ) break; */
+	    /* bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0); */
+	/* } */
+    /* } */
+    /* return cv::Point(x+dX,y+dY); */
+    return vecPatD[0]; 
 }
 
 /* float breast::findNeighbourLoopXUp(int x, int y, float fDist){ */
