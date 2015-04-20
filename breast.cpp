@@ -684,7 +684,7 @@ void breast::makeXinROIMap(){
 	    //HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_BACKGROUND)?128:0;
 	}
     }
-    cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB);
+    /* cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB); */
 
 
     // FILLING IN HOLES IN FAT MAP
@@ -695,7 +695,7 @@ void breast::makeXinROIMap(){
     cv::Mat HeightMapFilled;
     cv::morphologyEx(HeightMap,HeightMapFilled,cv::MORPH_CLOSE,mCircSE);
     /* cv::GaussianBlur(HeightMapFilled,HeightMapFilled,cv::Size(5,5),10); */
-    cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled);
+    /* cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled); */
 
     // Next step: identify remaining holes and fill them in, one by one.
     // Proposed Procedure:
@@ -704,66 +704,113 @@ void breast::makeXinROIMap(){
     // Can find true non-zero via making copy of image and writing to original
     //
     cv::Mat HeightMapCopy = HeightMapFilled.clone();
-    for(int i = 0; i < HeightMap.cols; i++){
-	for(int j = 0; j < HeightMap.rows; j++){
-		/* If there's really an unfilled spot there */
-	    int pType = this->getPixelType(i,j);
-	    if((pType != XIN_FAT) && (pType != XIN_BACKGROUND)){
-		if(HeightMapCopy.at<uchar>(j,i) == 0){
+    /* for(int i = 0; i < HeightMap.cols; i++){ */
+	/* for(int j = 0; j < HeightMap.rows; j++){ */
+		/* /1* If there's really an unfilled spot there *1/ */
+	    /* int pType = this->getPixelType(i,j); */
+	    /* if((pType != XIN_FAT) && (pType != XIN_BACKGROUND)){ */
+		/* if(HeightMapCopy.at<uchar>(j,i) == 0){ */
 
-		    // LINEAR AVERAGING GOES HERE
+		    /* // LINEAR AVERAGING GOES HERE */
 
-		    /* int dXd = 0; */
-		    /* int dXu = 0; */
-		    /* while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){ */
-			/* if(i+ ++dXu >= this->mMammoDist.cols - 1) break; */
-		    /* } */
-		    /* while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){ */
-			/* if(i+ --dXd <= 0) break; */
-		    /* } */
-		    /* float lWeight = float(HeightMapCopy.at<uchar>(j,i+dXd))*abs(1/float(dXd)); */
-		    /* float rWeight = float(HeightMapCopy.at<uchar>(j,i+dXu))*abs(1/float(dXu)); */
-		    /* HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd))); */
+		    /* /1* int dXd = 0; *1/ */
+		    /* /1* int dXu = 0; *1/ */
+		    /* /1* while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){ *1/ */
+			/* /1* if(i+ ++dXu >= this->mMammoDist.cols - 1) break; *1/ */
+		    /* /1* } *1/ */
+		    /* /1* while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){ *1/ */
+			/* /1* if(i+ --dXd <= 0) break; *1/ */
+		    /* /1* } *1/ */
+		    /* /1* float lWeight = float(HeightMapCopy.at<uchar>(j,i+dXd))*abs(1/float(dXd)); *1/ */
+		    /* /1* float rWeight = float(HeightMapCopy.at<uchar>(j,i+dXu))*abs(1/float(dXu)); *1/ */
+		    /* /1* HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd))); *1/ */
 
-		    HeightMapFilled.at<uchar>(j,i)=HeightMapCopy.at<uchar>(this->findNeighboursOnDistance(cv::Point(i,j)));
+		    /* /1* HeightMapFilled.at<uchar>(j,i)=HeightMapCopy.at<uchar>(this->findNeighboursOnDistance(cv::Point(i,j))); *1/ */
 
-		    /* HeightMapFilled.at<uchar>(j,i) = cWAv; */
-		    // COMPLICATED STUFF - FIND NEIGHBOUR AT SAME DISTANCE
-		    /* bool bUnfilled = true; */
-		    /* cv::Point pNeighbour = cv::Point(i,j); */
-		    /* int iCycles = 0; */
-		    /* while((bUnfilled) && (iCycles < 5)){ */
-			/* pNeighbour = this->findNeighboursOnDistance(pNeighbour); */
-			/* iCycles++; */
-			/* bUnfilled = (HeightMapCopy.at<uchar>(pNeighbour) == 0); */
-			/* /1* bUnfilled = false; *1/ */
-		    /* } */
-		    /* HeightMapFilled.at<uchar>(j,i) = HeightMapCopy.at<uchar>(pNeighbour); */
-		    /* Magically fill it in */
-		    /* Look at pixels above and below until distance changes*/
-		    /* Then go left / right until distance is same */
-		    /* Keep doing this until we find filled in one */
-			/* Peformance: store values of edge pixels? */
-		}
-	    }
-	}
-    }
+		    /* /1* HeightMapFilled.at<uchar>(j,i) = cWAv; *1/ */
+		    /* // COMPLICATED STUFF - FIND NEIGHBOUR AT SAME DISTANCE */
+		    /* /1* bool bUnfilled = true; *1/ */
+		    /* /1* cv::Point pNeighbour = cv::Point(i,j); *1/ */
+		    /* /1* int iCycles = 0; *1/ */
+		    /* /1* while((bUnfilled) && (iCycles < 5)){ *1/ */
+			/* /1* pNeighbour = this->findNeighboursOnDistance(pNeighbour); *1/ */
+			/* /1* iCycles++; *1/ */
+			/* /1* bUnfilled = (HeightMapCopy.at<uchar>(pNeighbour) == 0); *1/ */
+			/* /1* /2* bUnfilled = false; *2/ *1/ */
+		    /* /1* } *1/ */
+		    /* /1* HeightMapFilled.at<uchar>(j,i) = HeightMapCopy.at<uchar>(pNeighbour); *1/ */
+		    /* /1* Magically fill it in *1/ */
+		    /* /1* Look at pixels above and below until distance changes*/ 
+		    /* /1* Then go left / right until distance is same *1/ */
+		    /* /1* Keep doing this until we find filled in one *1/ */
+			/* /1* Peformance: store values of edge pixels? *1/ */
+		/* } */
+	    /* } */
+	/* } */
+    /* } */
     /* mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25)); */
     /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE); */
     /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
-    cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
-    this->mHeightMap = HeightMapFilled;
+    /* cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled); */
+    /* this->mHeightMap = HeightMapFilled; */
 
     /* Next step: Distance transform stuff */
     /* Want to create a vector of points at each distance i.e. vecDist[100] is all the points 100 away */
 
-    /* vector<vector<cv::Point>> vecPatD; */
-    /* vecPatD.resize(256); */
-    /* for(int i = 0; i < mMammoDist.rows; i++){ */
-	/* for(int j = 0; j < mMammoDist.rows; j++){ */
-	    /* vecPatD[mMammoDist.at<uchar>(j,i)].push_back(cv::Point(i,j)); */
-	/* } */
-    /* } */
+
+    /*
+     *
+     *	    AVERAGING PARALLEL TO THE BREAST EDGE
+     *
+     *
+     */
+
+    cv::Mat_<uchar> mMammoDistChar = mMammoDist; // At one point this was a matrix of ints - don't know why.
+    vector<vector<cv::Point>> vecPatD;
+    vecPatD.resize(256);
+    for(int j = 0; j < mMammoDistChar.rows; j++){
+	for(int i = 0; i < mMammoDistChar.cols; i++){
+	    int pType = this->getPixelType(i,j);
+	    if(pType != XIN_BACKGROUND){
+		int iDist = int(mMammoDistChar(j,i));
+		vecPatD[iDist].push_back(cv::Point(i,j));
+	    }
+	}
+    }
+
+/*     for(int i = 0; i < 256; i++){ */
+/* 	sort(vecPatD[i].begin(),vecPatD[i].end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;}); */
+/*     } */
+
+    for(int i = 0; i < 256; i++){
+	bool bEmpty;
+	uchar lastFilled = 0;
+	for(auto &p:vecPatD[i]){
+	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0); 
+	    if(bEmpty){
+		HeightMapFilled.at<uchar>(p) = lastFilled;
+	    } else {
+		lastFilled = HeightMapCopy.at<uchar>(p);
+	    }
+	}
+	lastFilled = 0;
+	for(auto it = vecPatD[i].rbegin(); it != vecPatD[i].rend(); it++){
+	    auto p = *it;
+	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0); 
+	    if(bEmpty){
+		uchar cCurrent = HeightMapFilled.at<uchar>(p);
+		if(cCurrent != 255){
+		    HeightMapFilled.at<uchar>(p) = (lastFilled+HeightMapFilled.at<uchar>(p))/2;
+		} else {
+		    HeightMapFilled.at<uchar>(p) = lastFilled;
+		}
+	    } else {
+		lastFilled = HeightMapCopy.at<uchar>(p);
+	    }
+	}
+    }
+    cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
+    this->mHeightMap = HeightMapFilled;
     /* /1* for(auto &i:vecPatD[100]){ *1/ */
 	    /* /1* cout << i; *1/ */
     /* /1* } *1/ */

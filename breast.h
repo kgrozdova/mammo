@@ -12,8 +12,8 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
-#include "stdafx.h"
-#include "interpolation.h"
+/* #include "stdafx.h" */
+/* #include "interpolation.h" */
 
 
 #define XIN_BACKGROUND 1
