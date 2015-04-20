@@ -772,7 +772,7 @@ void breast::makeXinROIMap(){
     for(int j = 0; j < mMammoDistChar.rows; j++){
 	for(int i = 0; i < mMammoDistChar.cols; i++){
 	    int pType = this->getPixelType(i,j);
-	    if(pType != XIN_BACKGROUND){
+	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
 		int iDist = int(mMammoDistChar(j,i));
 		vecPatD[iDist].push_back(cv::Point(i,j));
 	    }
@@ -807,6 +807,30 @@ void breast::makeXinROIMap(){
 		}
 	    } else {
 		lastFilled = HeightMapCopy.at<uchar>(p);
+	    }
+	}
+    }
+    for(int i = 0; i < HeightMap.cols; i++){
+	for(int j = 0; j < HeightMap.rows; j++){
+		/* If there's really an unfilled spot there */
+	    int pType = this->getPixelType(i,j);
+	    if(pType == XIN_DENSER_GLAND){
+		if(HeightMapCopy.at<uchar>(j,i) == 0){
+
+		    // LINEAR AVERAGING GOES HERE
+
+		    int dXd = 0;
+		    int dXu = 0;
+		    while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){
+			if(i+ ++dXu >= this->mMammoDist.cols - 1) break;
+		    }
+		    while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){
+			if(i+ --dXd <= 0) break;
+		    }
+		    float lWeight = float(HeightMapFilled.at<uchar>(j,i+dXd))*abs(1/float(dXd));
+		    float rWeight = float(HeightMapFilled.at<uchar>(j,i+dXu))*abs(1/float(dXu));
+		    HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd)));
+		}
 	    }
 	}
     }
