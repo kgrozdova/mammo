@@ -137,7 +137,7 @@ int main(int argc, char** argv){
                    if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                        tgTemp = thickness;
                    } else{
-                          tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                        tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
                    }
                    if(tgTemp >= 0 && tgTemp <= thickness){
                        tg += tgTemp;
@@ -153,11 +153,12 @@ int main(int argc, char** argv){
        }
        myfile.close();
        double t = breastDat.totalBreast();
-       breastDat.thicknessMap(coeff3, exposure);
-       breastDat.thicknessMapRedVal(coeff3, exposure);
-       //cout << tg/t*100 << endl;
+       //breastDat.fatRow(1000);
+       //breastDat.thicknessMap(dcalib, calib, KVP, exposure);
+       //breastDat.thicknessMapRedVal(coeff3, exposure);
+       cout << tg/t*100 << endl;
     vector<cv::Point> contactBorder = breastDat.getContact();
-    breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
+    //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
 
 //#endif
 }

@@ -84,7 +84,6 @@ class breast: public mammography, phantomCalibration{
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
         double totalBreast();
         static pair<double,double> glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t);
-        void thicknessMap(const pair<double,double> coeff3, const int exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 
 	// THICKNESS RELATED STUFF
@@ -110,18 +109,17 @@ class breast: public mammography, phantomCalibration{
     string heightRowArray(const int row, const string xOrY);
     pair<cv::Point,float> straightLevel(const int row);
     vector<cv::Point> contactBorder();
-    double averageDiffBorder(const vector<cv::Point> contactBorder);
+    double averageDiffBorder(const vector<cv::Point> contactBorder, const vector<cv::Point> breastBorder);
     vector<cv::Point> breastBorder();
     vector<cv::Point> contactBorderFinal(const vector<cv::Point> contactBorderVal, vector<cv::Point> breastBorderVal, const double averageDiffBorderVal);
-    vector<cv::Point> contactBorder2(const float* m);
     vector<cv::Point> contactBorderFinalIt2(vector<cv::Point> contactBorderValFin, const double averageDiffBorderVal);
     vector<cv::Point> getContact();
-    vector<cv::Point> pointsDiscard(vector<cv::Point> breastFatPoints);
-    float* fitPlane(vector<cv::Point> breastFatDiscarded);
+    vector<cv::Point> pointsFatForPlane(vector<cv::Point> breastFatPoints, const double averageDiffVal);
+    vector<float> fitPlane(vector<cv::Point> breastFatDiscarded);
     void fatRow(const int row);
-    static double getPlaneAngle(const float* plane);
-    double averageDistance(const float* plane, vector<cv::Point> breastFatDiscarded);
-    vector<cv::Point> contactBorder2(const float* plane, vector<cv::Point> breastFatDiscarded);
+    static double getPlaneAngle(const vector<float> plane);
+    double averageDistance(const vector<float> plane, vector<cv::Point> breastFatDiscarded);
+    vector<cv::Point> contactBorder2(const vector<float> plane, vector<cv::Point> breastFatDiscarded);
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
 };
