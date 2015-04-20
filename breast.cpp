@@ -317,29 +317,30 @@ float breast::findWidth(const int iBinMax, const int iNMax){
 
 
 bool breast::leftOrRight(){
-	std::vector<cv::Point> pEdgeContourCopy = pEdgeContour;
+	/* std::vector<cv::Point> pEdgeContourCopy = pEdgeContour; */
 	sort(pEdgeContour.begin(),pEdgeContour.end(),[](const cv::Point &l, const cv::Point &r){return l.x < r.x;});
-	sort(pEdgeContourCopy.begin(),pEdgeContourCopy.end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;});
-	int iXLast = -1;
-	int iYLast = -1;
-	int i2LastGap = 0;
-	int iCurrGap = 0;
-	int iTotalGap = 0;
-	for(auto i:pEdgeContour){
-		if (i.x == iXLast){
-			iCurrGap = abs(iYLast-i.y);
-			if(iCurrGap > 0.1*mMammo.rows){
-				if(i2LastGap != 0){
-					iTotalGap += i2LastGap - iCurrGap;
-				}
-			}
-		} else {
-			iXLast = i.x;
-			iYLast = i.y;
-			i2LastGap = iCurrGap;
-		}
-	}
-	this->bLeft = iTotalGap < 0;
+	/* sort(pEdgeContourCopy.begin(),pEdgeContourCopy.end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;}); */
+	/* int iXLast = -1; */
+	/* int iYLast = -1; */
+	/* int i2LastGap = 0; */
+	/* int iCurrGap = 0; */
+	/* int iTotalGap = 0; */
+	/* for(auto i:pEdgeContour){ */
+	/* 	if (i.x == iXLast){ */
+	/* 		iCurrGap = abs(iYLast-i.y); */
+	/* 		if(iCurrGap > 0.1*mMammo.rows){ */
+	/* 			if(i2LastGap != 0){ */
+	/* 				iTotalGap += i2LastGap - iCurrGap; */
+	/* 			} */
+	/* 		} */
+	/* 	} else { */
+	/* 		iXLast = i.x; */
+	/* 		iYLast = i.y; */
+	/* 		i2LastGap = iCurrGap; */
+	/* 	} */
+	/* } */
+	/* this->bLeft = iTotalGap < 0; */
+	this->bLeft = (this->ImageLaterality == 'L');
 	return bLeft;
 }
 

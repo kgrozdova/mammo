@@ -104,7 +104,7 @@ int main(int argc, char** argv){
     //
     // DRAWING THE PICTURES
     //
-//#ifdef KSENIA_STUFF
+#ifdef KSENIA_STUFF
     //cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
     //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     //breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
@@ -160,5 +160,5 @@ int main(int argc, char** argv){
     vector<cv::Point> contactBorder = breastDat.getContact();
     //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
 
-//#endif
+#endif
 }
