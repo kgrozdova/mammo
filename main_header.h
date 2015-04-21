@@ -17,6 +17,9 @@
 #include "phantomCalibration.h"
 #include "dailyCalibration.h"
 #include "scanner.h"
+#include "interpolation.h"
+#include "stdafx.h"
+
 
 using namespace std;
 

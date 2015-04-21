@@ -741,7 +741,7 @@ void breast::makeXinROIMap(){
 		    /* /1* } *1/ */
 		    /* /1* HeightMapFilled.at<uchar>(j,i) = HeightMapCopy.at<uchar>(pNeighbour); *1/ */
 		    /* /1* Magically fill it in *1/ */
-		    /* /1* Look at pixels above and below until distance changes*/ 
+		    /* /1* Look at pixels above and below until distance changes*/
 		    /* /1* Then go left / right until distance is same *1/ */
 		    /* /1* Keep doing this until we find filled in one *1/ */
 			/* /1* Peformance: store values of edge pixels? *1/ */
@@ -787,7 +787,7 @@ void breast::makeXinROIMap(){
 	bool bEmpty;
 	uchar lastFilled = 0;
 	for(auto &p:vecPatD[i]){
-	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0); 
+	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0);
 	    if(bEmpty){
 		HeightMapFilled.at<uchar>(p) = lastFilled;
 	    } else {
@@ -797,7 +797,7 @@ void breast::makeXinROIMap(){
 	lastFilled = 0;
 	for(auto it = vecPatD[i].rbegin(); it != vecPatD[i].rend(); it++){
 	    auto p = *it;
-	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0); 
+	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0);
 	    if(bEmpty){
 		uchar cCurrent = HeightMapFilled.at<uchar>(p);
 		if(cCurrent != 255){
@@ -871,7 +871,7 @@ cv::Point breast::findNeighboursOnDistance(cv::Point p){
 	/* } */
     /* } */
     /* return cv::Point(x+dX,y+dY); */
-    return vecPatD[0]; 
+    return vecPatD[0];
 }
 
 /* float breast::findNeighbourLoopXUp(int x, int y, float fDist){ */
@@ -1095,15 +1095,15 @@ void breast::exposureMap(const pair<double,double> coeff3, const int exposure, c
     cv::imwrite("test_exposureMap.png",dst);
 }
 
-string breast::heightRowArray(const int row, const string xOrY){
+string breast::heightRowArray(vector<cv::Point> contactBorder2Vec, const string xOrY){
     string RowArray = "[";
     int counter(0);
-    for(int i = 1; i < this->mHeightMap.cols; i++){
-        if(this->mHeightMap.at<float>(row,i) != 0){
+    for(vector<cv::Point>::iterator it = contactBorder2Vec.begin(); it != contactBorder2Vec.end(); it++){
+        if(this->mHeightMap.at<float>(it->y,it->x) != 0){
             if(xOrY == "x"){
-                RowArray.append(to_string(i));
+                RowArray.append(to_string(it->x));
             } else{
-                RowArray.append(to_string(double(this->mHeightMap.at<uchar>(row,i))));
+                RowArray.append(to_string(double(this->mHeightMap.at<uchar>(it->y,it->x))));
             }
             RowArray.append(",");
             counter++;
@@ -1198,42 +1198,60 @@ vector<cv::Point> breast::contactBorder(){
     return contactBorderPoints;
 }
 
-vector<cv::Point> breast::contactBorder2(const vector<float> plane, vector<cv::Point> breastFatDiscarded){
-    ofstream myfile;
-    myfile.open ("pointsChosen.txt");
-//    for(vector<cv::Point>::iterator it = contactBorder2Vec.begin() ; it != contactBorder2Vec.end(); ++it)
-//        myfile << it->x << " " << it->y << " " << float(this->mHeightMap.at<uchar>(it->x,it->y))*thickness/255 << "\n";
+vector<cv::Point> breast::contactBorder2(const vector<float> plane, vector<cv::Point> contactBorderFin, const double averageDiffVal){
     vector<cv::Point> contactBorderPoints;
-    double avDist = this->averageDistance(plane,breastFatDiscarded);
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     double thickness = atoi(bodyThickness.c_str());
-    double numerator, denominator, distance;
-    for(int i = 0; i < this->mHeightMap.rows; i++){
-        for(int j = 1; j < this->mHeightMap.cols; j++){
-            if(this->getPixelType(j,i) == XIN_FAT){
-                if(float(this->mHeightMap.at<uchar>(j,i)) != 0){
-                    numerator = plane[0]*j+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(j,i))*thickness/255+plane[3];
-                    denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
-                    distance = numerator/denominator;
-                    if(distance < 0){
-                        distance = -distance;
-                        if(avDist < 0)
-                            avDist = -avDist;
-                        if(distance > avDist+2.0){
-                            myfile << i << " " << j << "\n";
-                            contactBorderPoints.push_back(cv::Point(j,i));
-                            break;
-                        }
+    double numerator, denominator, temp;
+    double distance(0);
+    int counter(0);
+    for(vector<cv::Point>::iterator it = contactBorderFin.begin(); it != contactBorderFin.end(); it++){
+        for(int  i = 0; i < mHeightMap.cols; i++){
+            if(this->getPixelType(i,it->y) == XIN_FAT){
+                counter++;
+                if(it->y < mHeightMap.cols/2 && (counter > 45) ){
+                    if(this->mMammoDist.at<float>(it->y,i) > (averageDiffVal+45)){
+                        numerator = plane[0]*it->y+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(it->y,i))*thickness/255+plane[3];
+                        denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
+                        temp = numerator/denominator;
+                        if(temp < 0)
+                            temp = -temp;
+                        if(temp > distance)
+                            distance = temp;
+                    }
+                }else if(it->y > mHeightMap.cols/2 && (counter > 55) ){
+                    if(this->mMammoDist.at<float>(it->y,i) > (averageDiffVal+55)){
+                        numerator = plane[0]*it->y+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(it->y,i))*thickness/255+plane[3];
+                        denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
+                        temp = numerator/denominator;
+                        if(temp < 0)
+                            temp = -temp;
+                        if(temp > distance)
+                            distance = temp;
                     }
                 }
             }
         }
+        for(int  i = 0; i < mHeightMap.cols; i++){
+            if(this->getPixelType(i,it->y) == XIN_FAT){
+                numerator = plane[0]*it->y+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(it->y,i))*thickness/255+plane[3];
+                denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
+                temp = numerator/denominator;
+                if(temp < 0){
+                    temp = -temp;
+                    if(temp > distance){
+                        contactBorderPoints.push_back(cv::Point(it->y,i));
+                        break;
+                    }
+                }
+            }
+        }
+        counter = 0; distance = 0;
     }
-    myfile.close();
     return contactBorderPoints;
 }
 
-vector<cv::Point> breast::contactBorderFinal(const vector<cv::Point> contactBorderVal, vector<cv::Point> breastBorderVal, const double averageDiffBorderVal){
+vector<cv::Point> breast::contactBorderFinal(const vector<cv::Point> contactBorderVal, const double averageDiffBorderVal){
     cv::Mat_<uchar> mMammoDistChar = this->mMammoDist;
     vector<cv::Point> contactBorderFin;
     double borderDiff;
@@ -1248,8 +1266,8 @@ vector<cv::Point> breast::contactBorderFinal(const vector<cv::Point> contactBord
 
 vector<cv::Point> breast::pointsFatForPlane(vector<cv::Point> contactBorderFin, const double averageDiffVal){
     vector<cv::Point> pointFatDiscarded;
-    for(vector<cv::Point>::iterator it = contactBorderFin.begin(); it != contactBorderFin.end(); it++){
     int counter(0);
+    for(vector<cv::Point>::iterator it = contactBorderFin.begin(); it != contactBorderFin.end(); it++){
         for(int  i = 1; i < mHeightMap.cols; i++){
             if(this->getPixelType(i,it->y) == XIN_FAT){
                 counter++;
@@ -1264,6 +1282,7 @@ vector<cv::Point> breast::pointsFatForPlane(vector<cv::Point> contactBorderFin, 
                 }
             }
         }
+        counter = 0;
     }
     return pointFatDiscarded;
 }
@@ -1274,12 +1293,17 @@ vector<cv::Point> breast::getContact(){
     vector<cv::Point> contactBorderPoints =  this->contactBorder();
     vector<cv::Point> breastBorderPoints  = this->breastBorder();
     double averageDiffVal = this->averageDiffBorder(contactBorderPoints, breastBorderPoints);
-    vector<cv::Point> contactBorderFin = this->contactBorderFinal(contactBorderPoints, breastBorderPoints, averageDiffVal);
+    vector<cv::Point> contactBorderFin = this->contactBorderFinal(contactBorderPoints, averageDiffVal);
     vector<cv::Point> breastFatDiscarded = this->pointsFatForPlane(contactBorderFin, averageDiffVal);
     vector<float> m = this->fitPlane(breastFatDiscarded);
     //cout << "m: " << m[0] << " " << m[1] << " " << m[2] << " " << m[3] << endl;
-    vector<cv::Point> contactBorder2Vec = this->contactBorder2(m, breastFatDiscarded);
-    return contactBorder2Vec;
+    vector<cv::Point> contactBorder2Vec = this->contactBorder2(m, contactBorderFin, averageDiffVal);
+    ofstream myfile;
+    myfile.open ("pointsChosen.txt");
+    for(vector<cv::Point>::iterator it = contactBorder2Vec.begin(); it != contactBorder2Vec.end(); it++)
+        myfile << float(it->x) << " " << float(it->y) << " " << float(this->mHeightMap.at<uchar>(it->y,it->x))*thickness/255 << "\n";
+    myfile.close();
+    return contactBorderFin;
 }
 
 vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded){
@@ -1366,6 +1390,5 @@ double breast::averageDistance(const vector<float> plane, vector<cv::Point> brea
     //myfile.close();
     return avTemp/double(counter);
 }
-
 //#endif
 
