@@ -40,7 +40,7 @@ int main(int argc, char** argv){
     //
     // SEPERATING THE BREAST FROM THE BACKGROUND
     //
-    /* int histSize = 255; */
+    //int histSize = 255;
 
     //
     //FINDING THE CONTOUR WHICH THE DESRIBES THE EDGE OF THE BREAST
@@ -84,7 +84,7 @@ int main(int argc, char** argv){
     // Find the centers of the corners.
     /* vector<cv::Point> vecContCents = breastDat.findCornerCentre(); */
 
-    // Pick a corner to cut off.
+    // Pick a corner to cut off.#
     /* pair<int, int> iContPos = breastDat.pickCornerCutOff(bLeft); */
 
     //
@@ -103,7 +103,6 @@ int main(int argc, char** argv){
 
     //
     // DRAWING THE PICTURES
-    //
 //#ifdef KSENIA_STUFF
     //cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
     //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
@@ -114,9 +113,9 @@ int main(int argc, char** argv){
      string Exposure = various::ToString<long>(breastDat.Exposure);
       double thickness = atoi(bodyThickness.c_str());
       int exposure = atoi(Exposure.c_str());
-    //vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
-    //map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
-    //breastDat.applyExposureCorrection(breastDistMap);
+    vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
+    map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
+    breastDat.applyExposureCorrection(breastDistMap);
      dailyCalibration dcalib;
      dcalib.insertFilTar(breastDat);
      dcalib.InserQcTTg(breastDat, "qc.dat");
@@ -159,6 +158,6 @@ int main(int argc, char** argv){
        cout << tg/t*100 << endl;
     vector<cv::Point> contactBorder = breastDat.getContact();
     //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
-
+    coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, 0);
 //#endif
 }
