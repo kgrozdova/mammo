@@ -108,11 +108,11 @@ int main(int argc, char** argv){
     //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     //breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
 
-     string KVP = various::ToString<OFString>(breastDat.KVP);
+     string strKVP = various::ToString<OFString>(breastDat.KVP);
      string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);
      string Exposure = various::ToString<long>(breastDat.Exposure);
       double thickness = atoi(bodyThickness.c_str());
-      int exposure = atoi(Exposure.c_str());
+      double exposure = atoi(Exposure.c_str());
     vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
     map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
     breastDat.applyExposureCorrection(breastDistMap);
@@ -120,9 +120,9 @@ int main(int argc, char** argv){
      dcalib.insertFilTar(breastDat);
      dcalib.InserQcTTg(breastDat, "qc.dat");
      phantomCalibration calib;
-     calib.getThicknessData(dcalib.filTar, atoi(KVP.c_str()));
+     calib.getThicknessData(dcalib.filTar, atoi(strKVP.c_str()));
 
-      pair<double,double> coeff3;
+      //pair<double,double> coeff3;
       double tg(0);
       double tgTemp;
        ofstream myfile;
@@ -132,11 +132,11 @@ int main(int argc, char** argv){
            for(int j = 0; j < breastDat.mMammo.rows; j++){
                if(breastDat.isBreast(j,i)){
                    //thickness = breastDat.getHeight(j, i);
-                   coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, thickness);
+                   //coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, thickness);
                    if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
                        tgTemp = thickness;
                    } else{
-                        tgTemp = (log(double(breastDat.mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+                        tgTemp = breastDat.breastThickAtPixel(i, j, calib, dcalib.filTar, strKVP, thickness, exposure);
                    }
                    if(tgTemp >= 0 && tgTemp <= thickness){
                        tg += tgTemp;
@@ -158,6 +158,5 @@ int main(int argc, char** argv){
        cout << tg/t*100 << endl;
     vector<cv::Point> contactBorder = breastDat.getContact();
     //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
-    coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, 0);
 //#endif
 }

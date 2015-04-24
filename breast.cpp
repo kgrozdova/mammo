@@ -1428,3 +1428,7 @@ double breast::averageDistance(const vector<float> plane, vector<cv::Point> brea
 }
 //#endif
 
+double breast::breastThickAtPixel(const int i, const int j, const phantomCalibration calib, const string filTar, const string strKVP, const double t, const double exposure){
+    pair<double,double> coeff3 = breast::glandpercent(calib, filTar, strKVP, t);
+    return (log(double(this->mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+}

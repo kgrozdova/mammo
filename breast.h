@@ -85,6 +85,7 @@ class breast: public mammography, phantomCalibration{
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
         double totalBreast();
         static pair<double,double> glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t);
+        double breastThickAtPixel(const int i, const int j, const phantomCalibration calib, const string filTar, const string kV, const double t, const double exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 
 	// THICKNESS RELATED STUFF
