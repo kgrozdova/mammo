@@ -835,6 +835,7 @@ void breast::makeXinROIMap(){
 	}
     }
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
+    cv::imwrite(strFileName+"Mammo.png",this->mMammo8BitNorm);
     this->mHeightMap = HeightMapFilled;
     /* /1* for(auto &i:vecPatD[100]){ *1/ */
 	    /* /1* cout << i; *1/ */
