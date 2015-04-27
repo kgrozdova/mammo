@@ -100,6 +100,7 @@ class breast: public mammography, phantomCalibration{
 	bool isBreastROI(int x, int y); // Is a pixel within our ROI? (i.e. breast, and not pectoral muscle / skin fold)
 	bool isFat(int x, int y);	// Is a pixel is fat?
 	void makeXinROIMap();
+	uchar getAvNhood8(cv::Mat &mat, cv::Point &p, int nhood);
 	int getPixelType(int x, int y); // What type is a pixel?
 
     void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<cv::Point> contactBorderShapeVal);

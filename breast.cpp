@@ -642,11 +642,11 @@ void breast::makeXinROIMap(){
     cv::Mat HeightMap(HRROIMap.rows,HRROIMap.cols,CV_32F,cv::Scalar(0));
     for(int i = 0; i < HRROIMap.cols; i++){
 	for(int j = 0; j < HRROIMap.rows; j++){
-	    if(this->getPixelType(i,j)==XIN_FAT){ // 2 = fat
+	    /* if(this->getPixelType(i,j)==XIN_FAT){ // 2 = fat */
 		/* HRROIMap.at<Uint8>(j,i) = 255; */
 		HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue)));
 
-	    }
+	    /* } */
 	}
     }
     double minVal;
@@ -656,9 +656,9 @@ void breast::makeXinROIMap(){
     cv::minMaxLoc(HeightMap, &minVal, &maxVal);
     for(int i = 1; i < HRROIMap.cols; i++){
 	for(int j = 0; j < HRROIMap.rows; j++){
-	    if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat
-		HeightMap.at<float>(j,i)=float(minVal);
-	    }
+	    /* if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat */
+		/* HeightMap.at<float>(j,i)=float(minVal); */
+	    /* } */
 	}
     }
     cv::minMaxLoc(HeightMap, &minVal, &maxVal);
@@ -670,26 +670,24 @@ void breast::makeXinROIMap(){
     HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256
     cv::imwrite(strFileName+"FatLogTransform.png",HeightMap);
 
-    /* Make a second, three channel, map that distinguishes between background / not background */
-    cv::Mat HeightMapRGB;
-    /* HeightMap.convertTo(HeightMapRGB, CV_8UC3); */
-    cv::cvtColor(HeightMap,HeightMapRGB,CV_GRAY2RGB);
-    for(int i = 0; i < HeightMapRGB.cols; i++){
-	for(int j = 0; j < HeightMapRGB.rows; j++){
-	    //HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_FAT)?255:0;
-	    //HeightMapRGB.at<uchar>(j,i,1) = (this->getPixelType(i,j) == XIN_BACKGROUND)?128:0;
-	}
-    }
-    /* cv::imwrite(strFileName+"FatLogTransformRGB.png",HeightMapRGB); */
-
-
     // FILLING IN HOLES IN FAT MAP
     // Morphological closing: remove noise, fill in small holes
 	// Need to swap this for opening otherwise we will propagate noise!
 	// Could perform opening on whole log-transformed image then colour in holes
     cv::Mat mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25));
-    cv::Mat HeightMapFilled;
-    cv::morphologyEx(HeightMap,HeightMapFilled,cv::MORPH_CLOSE,mCircSE);
+    cv::Mat HeightMapFilled = HeightMap.clone();
+    cv::morphologyEx(HeightMap,HeightMapFilled,cv::MORPH_OPEN,mCircSE);
+
+    for(int i = 0; i < HeightMap.cols; i++){
+	for(int j = 0; j < HeightMap.rows; j++){
+	    if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat
+		/* HRROIMap.at<Uint8>(j,i) = 255; */
+		HeightMapFilled.at<uchar>(j,i) = 0;
+
+	    }
+	}
+    }
+
     /* cv::GaussianBlur(HeightMapFilled,HeightMapFilled,cv::Size(5,5),10); */
     /* cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled); */
 
@@ -761,74 +759,132 @@ void breast::makeXinROIMap(){
      *
      */
 
-    cv::Mat_<uchar> mMammoDistChar = mMammoDist; // At one point this was a matrix of ints - don't know why.
+    cv::Mat_<uchar> mMammoDistChar = mMammoDist.clone(); // At one point this was a matrix of ints - don't know why.
     vector<vector<cv::Point>> vecPatD;
     vecPatD.resize(256);
-    for(int j = 0; j < mMammoDistChar.rows; j++){
-	for(int i = 0; i < mMammoDistChar.cols; i++){
-	    int pType = this->getPixelType(i,j);
+    /* Contour method instead */
+    vector<vector<cv::Point>> pDistContours;
+    cv::Mat_<uchar> mMammoDistThresh;
+    cv::imwrite("test.png",mMammoDistChar);
+    for(int k = 0; k < 256; k++){
+	cv::threshold(mMammoDistChar, mMammoDistThresh, k, 255, 1);
+	cv::findContours(mMammoDistThresh.clone(),pDistContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
+    for(auto &vPatD:pDistContours){
+	bool bEmpty;
+	uchar lastFilled = 0;
+	for(auto &p:vPatD){
+	    int pType = this->getPixelType(p.x,p.y);
 	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
-		int iDist = int(mMammoDistChar(j,i));
-		vecPatD[iDist].push_back(cv::Point(i,j));
+		bEmpty = (HeightMapCopy.at<uchar>(p) == 0);
+		if(bEmpty){
+			HeightMapFilled.at<uchar>(p) = lastFilled;
+		} else {
+			/* lastFilled = HeightMapCopy.at<uchar>(p); */
+		    lastFilled = breast::getAvNhood8(HeightMapCopy, p, 2);
+		}
 	    }
 	}
+	lastFilled = 0;
+	for(auto it = vPatD.rbegin(); it != vPatD.rend(); it++){
+	    auto p = *it;
+	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0);
+	    int pType = this->getPixelType(p.x,p.y);
+	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
+		if(bEmpty){
+		    uchar cCurrent = HeightMapFilled.at<uchar>(p);
+		    if(cCurrent != 255){
+			HeightMapFilled.at<uchar>(p) = (lastFilled+HeightMapFilled.at<uchar>(p))/2;
+		    } else {
+			HeightMapFilled.at<uchar>(p) = lastFilled;
+		    }
+		} else {
+		    lastFilled = breast::getAvNhood8(HeightMapCopy, p, 2);
+		}
+	    }
+	}
+	cout << float(100*k/255) << "%\r" << flush;
     }
+    }
+    HeightMapCopy = HeightMapFilled.clone();
+    /* for(int j = 0; j < mMammoDistChar.rows; j++){ */
+	/* for(int i = 0; i < mMammoDistChar.cols; i++){ */
+	    /* int pType = this->getPixelType(i,j); */
+	    /* if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){ */
+		/* int iDist = int(mMammoDistChar(j,i)); */
+		/* vecPatD[iDist].push_back(cv::Point(i,j)); */
+	    /* } */
+	/* } */
+    /* } */
 
 /*     for(int i = 0; i < 256; i++){ */
 /* 	sort(vecPatD[i].begin(),vecPatD[i].end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;}); */
 /*     } */
 
-    for(int i = 0; i < 256; i++){
-	bool bEmpty;
-	uchar lastFilled = 0;
-	for(auto &p:vecPatD[i]){
-	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0);
-	    if(bEmpty){
-		HeightMapFilled.at<uchar>(p) = lastFilled;
-	    } else {
-		lastFilled = HeightMapCopy.at<uchar>(p);
-	    }
-	}
-	lastFilled = 0;
-	for(auto it = vecPatD[i].rbegin(); it != vecPatD[i].rend(); it++){
-	    auto p = *it;
-	    bEmpty = (HeightMapCopy.at<uchar>(p) == 0);
-	    if(bEmpty){
-		uchar cCurrent = HeightMapFilled.at<uchar>(p);
-		if(cCurrent != 255){
-		    HeightMapFilled.at<uchar>(p) = (lastFilled+HeightMapFilled.at<uchar>(p))/2;
-		} else {
-		    HeightMapFilled.at<uchar>(p) = lastFilled;
-		}
-	    } else {
-		lastFilled = HeightMapCopy.at<uchar>(p);
-	    }
-	}
-    }
-    for(int i = 0; i < HeightMap.cols; i++){
-	for(int j = 0; j < HeightMap.rows; j++){
+    /* for(int i = 0; i < 256; i++){ */
+	/* bool bEmpty; */
+	/* uchar lastFilled = 0; */
+	/* for(auto &p:vecPatD[i]){ */
+	    /* bEmpty = (HeightMapCopy.at<uchar>(p) == 0); */
+	    /* if(bEmpty){ */
+		/* HeightMapFilled.at<uchar>(p) = lastFilled; */
+	    /* } else { */
+		/* lastFilled = HeightMapCopy.at<uchar>(p); */
+	    /* } */
+	/* } */
+	/* lastFilled = 0; */
+	/* for(auto it = vecPatD[i].rbegin(); it != vecPatD[i].rend(); it++){ */
+	    /* auto p = *it; */
+	    /* bEmpty = (HeightMapCopy.at<uchar>(p) == 0); */
+	    /* if(bEmpty){ */
+		/* uchar cCurrent = HeightMapFilled.at<uchar>(p); */
+		/* if(cCurrent != 255){ */
+		    /* HeightMapFilled.at<uchar>(p) = (lastFilled+HeightMapFilled.at<uchar>(p))/2; */
+		/* } else { */
+		    /* HeightMapFilled.at<uchar>(p) = lastFilled; */
+		/* } */
+	    /* } else { */
+		/* lastFilled = HeightMapCopy.at<uchar>(p); */
+	    /* } */
+	/* } */
+    /* } */
+    for(int j = 0; j < HeightMap.rows; j++){
 		/* If there's really an unfilled spot there */
+	uchar lastFilled = 0;
+	for(int i = 0; i < HeightMap.cols; i++){
 	    int pType = this->getPixelType(i,j);
-	    if(pType == XIN_DENSER_GLAND){
-		if(HeightMapCopy.at<uchar>(j,i) == 0){
+	    /* if(pType == XIN_DENSER_GLAND){ */
+	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
+		uchar cCurrent = HeightMapFilled.at<uchar>(j,i);
+		if(cCurrent == 0){
+		    HeightMapFilled.at<uchar>(j,i) = lastFilled;
+		} else {
+		    lastFilled = cCurrent;
+		}
+	    }
 
-		    // LINEAR AVERAGING GOES HERE
+	}
 
-		    int dXd = 0;
-		    int dXu = 0;
-		    while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){
-			if(i+ ++dXu >= this->mMammoDist.cols - 1) break;
+	lastFilled = 0;
+	for(int i = HeightMap.cols - 1; i >= 0; i--){
+	    int pType = this->getPixelType(i,j);
+	    /* if(pType == XIN_DENSER_GLAND){ */
+	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
+	    uchar cCurrent = HeightMapFilled.at<uchar>(j,i);
+		if(cCurrent == 0){
+		    if(cCurrent != 255){
+			HeightMapFilled.at<uchar>(j,i) = (lastFilled+cCurrent)/2;
+		    } else {
+			HeightMapFilled.at<uchar>(j,i) = lastFilled;
 		    }
-		    while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){
-			if(i+ --dXd <= 0) break;
-		    }
-		    float lWeight = float(HeightMapFilled.at<uchar>(j,i+dXd))*abs(1/float(dXd));
-		    float rWeight = float(HeightMapFilled.at<uchar>(j,i+dXu))*abs(1/float(dXu));
-		    HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd)));
+		} else {
+		    lastFilled = HeightMapCopy.at<uchar>(j,i);
 		}
 	    }
 	}
+
     }
+    cv::Mat mCircSE2 = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2,2));
+    cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE2);
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
     cv::imwrite(strFileName+"Mammo.png",this->mMammo8BitNorm);
     /* /1* for(auto &i:vecPatD[100]){ *1/ */
@@ -878,6 +934,22 @@ void breast::makeXinROIMap(){
     cv::imwrite(strFileName+"FatLog2Orig.png",HeightMapFilled);
     cv::imwrite(strFileName+"MammoOrig.png",mMammo);
     this->mHeightMap16 = HeightMapFilled;
+}
+
+uchar breast::getAvNhood8(cv::Mat &mat, cv::Point &p, int nhood){
+    float av=0;
+    int n = 0;
+    for(int i = 0; i < nhood; i++){
+	for(int j = 0; j < nhood; j++){
+	    float cC = float(mat.at<uchar>(p.y-1+j,p.x-1+i));
+	    if(cC > 0.5){
+		n++;
+		av+=cC;
+	    }
+	}
+    }
+    av = av / n;
+    return uchar(av);
 }
 
 // Currently finds the lower neighbour only.
