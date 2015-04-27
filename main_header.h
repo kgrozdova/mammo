@@ -17,9 +17,12 @@
 #include "phantomCalibration.h"
 #include "dailyCalibration.h"
 #include "scanner.h"
-/* #include "interpolation.h" */
-/* #include "stdafx.h" */
 
+/* #define KSENIA_STUFF */
+#ifdef KSENIA_STUFF
+    #include "interpolation.h"
+    #include "stdafx.h"
+#endif 
 
 using namespace std;
 

@@ -628,14 +628,9 @@ void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int expo
     /* cv::imwrite("test_thickMapRed.png",dst); */
 }
 
-double breast::getHeight(int x, int y){
-    // Radial thickness model:
-    // First, we need to find the distance of the pixel from the breast edge.
-    /* int iDistance = this->mMammoDist.at<uchar>(y,x); */
-    /* return double(vecDistBrightBrightest[iDistance]); */
-
+Uint16 breast::getHeight(int x, int y){
     // Equivalent-log-fat model
-    return double(this->mHeightMap.at<uchar>(y,x));
+    return this->mHeightMap16.at<Uint16>(y,x);
 }
 
 bool breast::isFat(int x, int y){
@@ -836,7 +831,6 @@ void breast::makeXinROIMap(){
     }
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
     cv::imwrite(strFileName+"Mammo.png",this->mMammo8BitNorm);
-    this->mHeightMap = HeightMapFilled;
     /* /1* for(auto &i:vecPatD[100]){ *1/ */
 	    /* /1* cout << i; *1/ */
     /* /1* } *1/ */
@@ -870,6 +864,7 @@ void breast::makeXinROIMap(){
     /* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
     /* HeightMap-=minVal; */
     /* HeightMap.convertTo(HeightMap,CV_8U,255.0/(maxVal-minVal)); */
+    this->mHeightMap = HeightMapFilled;
     HeightMapFilled.convertTo(HeightMapFilled,CV_16U);
     for(int i = 0; i < HeightMap.cols; i++){
 	for(int j = 0; j < HeightMap.rows; j++){
@@ -882,7 +877,7 @@ void breast::makeXinROIMap(){
     }
     cv::imwrite(strFileName+"FatLog2Orig.png",HeightMapFilled);
     cv::imwrite(strFileName+"MammoOrig.png",mMammo);
-    cout << "That number is " << float((maxVal-minVal)/255.0) << endl;
+    this->mHeightMap16 = HeightMapFilled;
 }
 
 // Currently finds the lower neighbour only.

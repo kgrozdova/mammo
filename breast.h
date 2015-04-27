@@ -69,6 +69,7 @@ class breast: public mammography, phantomCalibration{
 	cv::Mat mMammoDistImage;
 	cv::Mat mMammoFatROI;
 	cv::Mat mHeightMap;
+	cv::Mat mHeightMap16;
 	Uint32 dMeanBackgroundValue = 0;
 
 	// Functions
@@ -94,7 +95,7 @@ class breast: public mammography, phantomCalibration{
 	void getRadialThickness();
 
 	// FRIENDLY FUNCTIONS FOR FINDING INFORMATION ABOUT BREAST (consider making other functions private!)
-	double getHeight(int x, int y); // Returns the height of the pixel in units to be determined.
+	Uint16 getHeight(int x, int y); // Returns the height of the pixel in units to be determined.
 	bool isBreast(int x, int y);	// Is a pixel is breast or background?
 	bool isBreastROI(int x, int y); // Is a pixel within our ROI? (i.e. breast, and not pectoral muscle / skin fold)
 	bool isFat(int x, int y);	// Is a pixel is fat?
