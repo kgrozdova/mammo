@@ -843,6 +843,46 @@ void breast::makeXinROIMap(){
     /* this->vecPointsAtDist = vecPatD; */
     /* cout << "Started" << flush; */
     /* cout << findNeighboursOnDistance(cv::Point(200,200)); */
+
+
+    /* Undoing all the transformations */
+    /* for(int i = 0; i < HRROIMap.cols; i++){ */
+	/* for(int j = 0; j < HRROIMap.rows; j++){ */
+	    /* if(this->getPixelType(i,j)==XIN_FAT){ // 2 = fat */
+		/* /1* HRROIMap.at<Uint8>(j,i) = 255; *1/ */
+		/* HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue))); */
+
+	    /* } */
+	/* } */
+    /* } */
+    /* double minVal; */
+    /* double maxVal; */
+
+    /* // Rescale the image to make it lie between 0 and 255 */
+    /* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
+    /* for(int i = 1; i < HRROIMap.cols; i++){ */
+	/* for(int j = 0; j < HRROIMap.rows; j++){ */
+	    /* if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat */
+		/* HeightMap.at<float>(j,i)=float(minVal); */
+	    /* } */
+	/* } */
+    /* } */
+    /* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
+    /* HeightMap-=minVal; */
+    /* HeightMap.convertTo(HeightMap,CV_8U,255.0/(maxVal-minVal)); */
+    HeightMapFilled.convertTo(HeightMapFilled,CV_16U);
+    for(int i = 0; i < HeightMap.cols; i++){
+	for(int j = 0; j < HeightMap.rows; j++){
+	    float fCurrentShade = float(HeightMapFilled.at<Uint16>(j,i));
+	    /* HeightMapFilled.at<Uint16>(j,i) = exp(float(-HeightMapFilled.at<Uint16>(j,i)*(maxVal-minVal)/255.0+minVal))*float(this->dMeanBackgroundValue); */
+	    fCurrentShade = fCurrentShade*(float(maxVal-minVal)/255.0) + minVal;
+	    fCurrentShade = exp(-fCurrentShade)*this->dMeanBackgroundValue;
+	    HeightMapFilled.at<Uint16>(j,i) = Uint16(fCurrentShade);
+	}
+    }
+    cv::imwrite(strFileName+"FatLog2Orig.png",HeightMapFilled);
+    cv::imwrite(strFileName+"MammoOrig.png",mMammo);
+    cout << "That number is " << float((maxVal-minVal)/255.0) << endl;
 }
 
 // Currently finds the lower neighbour only.
