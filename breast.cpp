@@ -716,12 +716,8 @@ void breast::makeXinROIMap(){
      */
 
     cv::Mat_<uchar> mMammoDistChar = mMammoDist.clone(); // At one point this was a matrix of ints - don't know why.
-    vector<vector<cv::Point>> vecPatD;
-    vecPatD.resize(256);
-    /* Contour method instead */
     vector<vector<cv::Point>> pDistContours;
     cv::Mat_<uchar> mMammoDistThresh;
-    cv::imwrite("test.png",mMammoDistChar);
     for(int k = 0; k < 256; k++){
 	cv::threshold(mMammoDistChar, mMammoDistThresh, k, 255, 1);
 	cv::findContours(mMammoDistThresh.clone(),pDistContours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
@@ -791,45 +787,13 @@ void breast::makeXinROIMap(){
     cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE2);
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
     cv::imwrite(strFileName+"Mammo.png",this->mMammo8BitNorm);
-    /* /1* for(auto &i:vecPatD[100]){ *1/ */
-	    /* /1* cout << i; *1/ */
-    /* /1* } *1/ */
-    /* this->vecPointsAtDist = vecPatD; */
-    /* cout << "Started" << flush; */
-    /* cout << findNeighboursOnDistance(cv::Point(200,200)); */
-
 
     /* Undoing all the transformations */
-    /* for(int i = 0; i < HRROIMap.cols; i++){ */
-	/* for(int j = 0; j < HRROIMap.rows; j++){ */
-	    /* if(this->getPixelType(i,j)==XIN_FAT){ // 2 = fat */
-		/* /1* HRROIMap.at<Uint8>(j,i) = 255; *1/ */
-		/* HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue))); */
-
-	    /* } */
-	/* } */
-    /* } */
-    /* double minVal; */
-    /* double maxVal; */
-
-    /* // Rescale the image to make it lie between 0 and 255 */
-    /* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
-    /* for(int i = 1; i < HRROIMap.cols; i++){ */
-	/* for(int j = 0; j < HRROIMap.rows; j++){ */
-	    /* if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat */
-		/* HeightMap.at<float>(j,i)=float(minVal); */
-	    /* } */
-	/* } */
-    /* } */
-    /* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
-    /* HeightMap-=minVal; */
-    /* HeightMap.convertTo(HeightMap,CV_8U,255.0/(maxVal-minVal)); */
     this->mHeightMap = HeightMapFilled;
     HeightMapFilled.convertTo(HeightMapFilled,CV_16U);
     for(int i = 0; i < HeightMap.cols; i++){
 	for(int j = 0; j < HeightMap.rows; j++){
 	    float fCurrentShade = float(HeightMapFilled.at<Uint16>(j,i));
-	    /* HeightMapFilled.at<Uint16>(j,i) = exp(float(-HeightMapFilled.at<Uint16>(j,i)*(maxVal-minVal)/255.0+minVal))*float(this->dMeanBackgroundValue); */
 	    fCurrentShade = fCurrentShade*(float(maxVal-minVal)/255.0) + minVal;
 	    fCurrentShade = exp(-fCurrentShade)*this->dMeanBackgroundValue;
 	    HeightMapFilled.at<Uint16>(j,i) = Uint16(fCurrentShade);
@@ -856,69 +820,6 @@ uchar breast::getAvNhood8(cv::Mat &mat, cv::Point &p, int nhood){
     return uchar(av);
 }
 
-// Currently finds the lower neighbour only.
-cv::Point breast::findNeighboursOnDistance(cv::Point p){
-    /* vector<cv::Point> vecPatD = vecPointsAtDist[this->mMammoDist.at<uchar>(p)]; */
-    vector<cv::Point> vecPatD;
-    int lBound = max(p.x-200,0);
-    int rBound = min(p.x+200,mMammoDist.cols);
-    int uBound = max(p.y-200,0);
-    int dBound = min(p.y+200,mMammoDist.rows);
-    uchar cDist = this->mMammoDist.at<uchar>(p);
-    for(int i = lBound; i < rBound; i++){
-	for(int j = uBound; j < dBound; j++){
-	    if((this->mMammoDist.at<uchar>(j,i) == cDist) && (this->getPixelType(i,j)==XIN_FAT)){
-		vecPatD.push_back(cv::Point(i,j));
-	    }
-	}
-    }
-    sort(vecPatD.begin(),vecPatD.end(),[&](const cv::Point &l, const cv::Point &r){return cv::norm(l-p) < cv::norm(r-p);});
-    /* cv::Point result; */
-    /* for(auto &i:vecPatD){ */
-	/* if(this->getPixelType(i.x,i.y)==XIN_FAT){ */
-	    /* result = i; */
-	    /* break; */
-	/* } */
-    /* } */
-    /* int x = p.x; */
-    /* int y = p.y; */
-    /* float fDist = this->mMammoDist.at<float>(y,x); */
-    /* // Go up until distance changes */
-    /* int dY = 0; */
-    /* int dX = 0; */
-    /* bool bDistChange = false; */
-    /* while(!bDistChange){ */
-	/* if(y+ ++dY > this->mMammoDist.rows) break; */
-	/* bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x)); */
-    /* } */
-    /* float fYDiff = this->mMammoDist.at<float>(y+dY,x) - fDist; // If dist decreases, neg */
-    /* bool bDistRightDir = true; */
-    /* while(bDistRightDir){ */
-	/* if(x+ ++dX > this->mMammoDist.rows) break; */
-	/* bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0); */
-    /* } */
-    /* bDistChange = (fDist == this->mMammoDist.at<float>(y+dY,x+dX)); */
-    /* if(bDistChange){ */
-	/* dX = 0; */
-	/* while(bDistRightDir){ */
-	    /* dX--; */
-	    /* if(x+ ++dX < 0 ) break; */
-	    /* bDistRightDir = (abs(fYDiff) - abs(fDist - this->mMammoDist.at<float>(y+dY,x+dX)) > 0); */
-	/* } */
-    /* } */
-    /* return cv::Point(x+dX,y+dY); */
-    return vecPatD[0];
-}
-
-/* float breast::findNeighbourLoopXUp(int x, int y, float fDist){ */
-/*     int dX = 0; */
-/*     bool bDistChange = true; */
-/*     while(bDistChange){ */
-/* 	dX++; */
-/* 	bDistChange = (fDist == this->mMammoDist.at<float>(y,x+dX)); */
-/*     } */
-/*     return this->mMammoDist.at<float>(y,x+dX) - fDist; // If dist decreases, neg */
-/* } */
 
 int breast::getPixelType(int x, int y){
     int iType = this->mChenFatClass.at<Uint8>(y,x,0);
@@ -977,7 +878,7 @@ vector<pair<int,int>> breast::pixelOfInterestExposure(){
     pair<float, float> rightPeak = this->findHistPeakRight();
     pair<float, float> leftPeak = this->findHistPeakLeft();
     float minVal = leftPeak.first;
-    int rightLim;
+    int rightLim = 0;
     for(int  i = rightPeak.second; i > leftPeak.second*3.5; i--){
         if(this->mHist.at<float>(i) < minVal)
             minVal = this->mHist.at<float>(i);
@@ -1075,8 +976,8 @@ map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>
 }
 
 void breast::applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>> breastDistMap){
-    double distAvNext;
-    int distVal, vecLength1, vecLength2, pixVal;
+    /* double distAvNext; */
+    int /*distVal,*/ vecLength1, vecLength2, pixVal;
     map<int,vector<pair<double,pair<int,int>>>>::iterator it;
     vector<pair<pair<int,int>,double>> correctedMPVs;
     it = breastDistMap.begin();
@@ -1342,7 +1243,7 @@ vector<cv::Point> breast::pointsFatForPlane(vector<cv::Point> contactBorderFin, 
 
 vector<cv::Point> breast::getContact(){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
-    double thickness = atoi(bodyThickness.c_str());
+    /* double thickness = atoi(bodyThickness.c_str()); */
     vector<cv::Point> contactBorderPoints =  this->contactBorder();
     vector<cv::Point> breastBorderPoints  = this->breastBorder();
     double averageDiffVal = this->averageDiffBorder(contactBorderPoints, breastBorderPoints);
