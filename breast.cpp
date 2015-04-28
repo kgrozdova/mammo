@@ -642,11 +642,7 @@ void breast::makeXinROIMap(){
     cv::Mat HeightMap(HRROIMap.rows,HRROIMap.cols,CV_32F,cv::Scalar(0));
     for(int i = 0; i < HRROIMap.cols; i++){
 	for(int j = 0; j < HRROIMap.rows; j++){
-	    /* if(this->getPixelType(i,j)==XIN_FAT){ // 2 = fat */
-		/* HRROIMap.at<Uint8>(j,i) = 255; */
-		HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue)));
-
-	    /* } */
+	    HeightMap.at<float>(j,i) = -1*(log(float(mMammo.at<Uint16>(j,i))/float(this->dMeanBackgroundValue)));
 	}
     }
     double minVal;
@@ -654,26 +650,16 @@ void breast::makeXinROIMap(){
 
     // Rescale the image to make it lie between 0 and 255
     cv::minMaxLoc(HeightMap, &minVal, &maxVal);
-    for(int i = 1; i < HRROIMap.cols; i++){
-	for(int j = 0; j < HRROIMap.rows; j++){
-	    /* if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat */
-		/* HeightMap.at<float>(j,i)=float(minVal); */
-	    /* } */
-	}
-    }
-    cv::minMaxLoc(HeightMap, &minVal, &maxVal);
     HeightMap-=minVal;
     HeightMap.convertTo(HeightMap,CV_8U,255.0/(maxVal-minVal));
 /* cv::minMaxLoc(HeightMap, &minVal, &maxVal); */
     /* HeightMap = HeightMap*256/maxVal; */
 
-    HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256
+    /* HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256 */
     cv::imwrite(strFileName+"FatLogTransform.png",HeightMap);
 
     // FILLING IN HOLES IN FAT MAP
-    // Morphological closing: remove noise, fill in small holes
-	// Need to swap this for opening otherwise we will propagate noise!
-	// Could perform opening on whole log-transformed image then colour in holes
+    // Morphological opening: remove noise, fill in small holes
     cv::Mat mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25));
     cv::Mat HeightMapFilled = HeightMap.clone();
     cv::morphologyEx(HeightMap,HeightMapFilled,cv::MORPH_OPEN,mCircSE);
@@ -681,7 +667,6 @@ void breast::makeXinROIMap(){
     for(int i = 0; i < HeightMap.cols; i++){
 	for(int j = 0; j < HeightMap.rows; j++){
 	    if(this->getPixelType(i,j)!=XIN_FAT){ // 2 = fat
-		/* HRROIMap.at<Uint8>(j,i) = 255; */
 		HeightMapFilled.at<uchar>(j,i) = 0;
 
 	    }
@@ -701,7 +686,7 @@ void breast::makeXinROIMap(){
     /* mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25)); */
     /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE); */
     /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
-    cv::imwrite(strFileName+"FatLogClosed.png",HeightMapFilled);
+    /* cv::imwrite(strFileName+"FatLogClosed.png",HeightMapFilled); */
     /* this->mHeightMap = HeightMapFilled; */
 
     /* Next step: Distance transform stuff */
@@ -763,7 +748,7 @@ void breast::makeXinROIMap(){
 
     for(int j = 0; j < HeightMap.rows; j++){
 	uchar lastFilled = 0;
-	int distFromHole = 0;
+	float distFromHole = 0;
 	for(int i = 0; i < HeightMap.cols; i++){
 	    int pType = this->getPixelType(i,j);
 	    /* if(pType == XIN_DENSER_GLAND){ */
@@ -785,11 +770,13 @@ void breast::makeXinROIMap(){
 
     cv::Mat mCircSE2 = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2,2));
     cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE2);
-    cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
-    cv::imwrite(strFileName+"Mammo.png",this->mMammo8BitNorm);
+    cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
+    cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
+    cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
+    cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled);
+    this->mHeightMap = HeightMapFilled.clone();
 
     /* Undoing all the transformations */
-    this->mHeightMap = HeightMapFilled;
     HeightMapFilled.convertTo(HeightMapFilled,CV_16U);
     for(int i = 0; i < HeightMap.cols; i++){
 	for(int j = 0; j < HeightMap.rows; j++){
@@ -799,9 +786,7 @@ void breast::makeXinROIMap(){
 	    HeightMapFilled.at<Uint16>(j,i) = Uint16(fCurrentShade);
 	}
     }
-    cv::imwrite(strFileName+"FatLog2Orig.png",HeightMapFilled);
-    cv::imwrite(strFileName+"MammoOrig.png",mMammo);
-    this->mHeightMap16 = HeightMapFilled;
+    this->mHeightMap16 = HeightMapFilled.clone();
 }
 
 uchar breast::getAvNhood8(cv::Mat &mat, cv::Point &p, int nhood){
