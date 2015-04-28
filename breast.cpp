@@ -698,50 +698,6 @@ void breast::makeXinROIMap(){
     // Can find true non-zero via making copy of image and writing to original
     //
     cv::Mat HeightMapCopy = HeightMapFilled.clone();
-    /* for(int i = 0; i < HeightMap.cols; i++){ */
-	/* for(int j = 0; j < HeightMap.rows; j++){ */
-		/* /1* If there's really an unfilled spot there *1/ */
-	    /* int pType = this->getPixelType(i,j); */
-	    /* if((pType != XIN_FAT) && (pType != XIN_BACKGROUND)){ */
-		/* if(HeightMapCopy.at<uchar>(j,i) == 0){ */
-
-		    /* // LINEAR AVERAGING GOES HERE */
-
-		    /* /1* int dXd = 0; *1/ */
-		    /* /1* int dXu = 0; *1/ */
-		    /* /1* while(HeightMapCopy.at<uchar>(j,i+dXu) == 0){ *1/ */
-			/* /1* if(i+ ++dXu >= this->mMammoDist.cols - 1) break; *1/ */
-		    /* /1* } *1/ */
-		    /* /1* while(HeightMapCopy.at<uchar>(j,i+dXd) == 0){ *1/ */
-			/* /1* if(i+ --dXd <= 0) break; *1/ */
-		    /* /1* } *1/ */
-		    /* /1* float lWeight = float(HeightMapCopy.at<uchar>(j,i+dXd))*abs(1/float(dXd)); *1/ */
-		    /* /1* float rWeight = float(HeightMapCopy.at<uchar>(j,i+dXu))*abs(1/float(dXu)); *1/ */
-		    /* /1* HeightMapFilled.at<uchar>(j,i) = uchar((lWeight+rWeight)/(1/float(dXu) - 1/float(dXd))); *1/ */
-
-		    /* /1* HeightMapFilled.at<uchar>(j,i)=HeightMapCopy.at<uchar>(this->findNeighboursOnDistance(cv::Point(i,j))); *1/ */
-
-		    /* /1* HeightMapFilled.at<uchar>(j,i) = cWAv; *1/ */
-		    /* // COMPLICATED STUFF - FIND NEIGHBOUR AT SAME DISTANCE */
-		    /* /1* bool bUnfilled = true; *1/ */
-		    /* /1* cv::Point pNeighbour = cv::Point(i,j); *1/ */
-		    /* /1* int iCycles = 0; *1/ */
-		    /* /1* while((bUnfilled) && (iCycles < 5)){ *1/ */
-			/* /1* pNeighbour = this->findNeighboursOnDistance(pNeighbour); *1/ */
-			/* /1* iCycles++; *1/ */
-			/* /1* bUnfilled = (HeightMapCopy.at<uchar>(pNeighbour) == 0); *1/ */
-			/* /1* /2* bUnfilled = false; *2/ *1/ */
-		    /* /1* } *1/ */
-		    /* /1* HeightMapFilled.at<uchar>(j,i) = HeightMapCopy.at<uchar>(pNeighbour); *1/ */
-		    /* /1* Magically fill it in *1/ */
-		    /* /1* Look at pixels above and below until distance changes*/
-		    /* /1* Then go left / right until distance is same *1/ */
-		    /* /1* Keep doing this until we find filled in one *1/ */
-			/* /1* Peformance: store values of edge pixels? *1/ */
-		/* } */
-	    /* } */
-	/* } */
-    /* } */
     /* mCircSE = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(25,25)); */
     /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE); */
     /* cv::medianBlur(HeightMapFilled,HeightMapFilled,25); */
@@ -806,83 +762,31 @@ void breast::makeXinROIMap(){
     }
     }
     HeightMapCopy = HeightMapFilled.clone();
-    /* for(int j = 0; j < mMammoDistChar.rows; j++){ */
-	/* for(int i = 0; i < mMammoDistChar.cols; i++){ */
-	    /* int pType = this->getPixelType(i,j); */
-	    /* if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){ */
-		/* int iDist = int(mMammoDistChar(j,i)); */
-		/* vecPatD[iDist].push_back(cv::Point(i,j)); */
-	    /* } */
-	/* } */
-    /* } */
 
-/*     for(int i = 0; i < 256; i++){ */
-/* 	sort(vecPatD[i].begin(),vecPatD[i].end(),[](const cv::Point &l, const cv::Point &r){return l.y < r.y;}); */
-/*     } */
+    /* Linear interpolation along x-axis */
 
-    /* for(int i = 0; i < 256; i++){ */
-	/* bool bEmpty; */
-	/* uchar lastFilled = 0; */
-	/* for(auto &p:vecPatD[i]){ */
-	    /* bEmpty = (HeightMapCopy.at<uchar>(p) == 0); */
-	    /* if(bEmpty){ */
-		/* HeightMapFilled.at<uchar>(p) = lastFilled; */
-	    /* } else { */
-		/* lastFilled = HeightMapCopy.at<uchar>(p); */
-	    /* } */
-	/* } */
-	/* lastFilled = 0; */
-	/* for(auto it = vecPatD[i].rbegin(); it != vecPatD[i].rend(); it++){ */
-	    /* auto p = *it; */
-	    /* bEmpty = (HeightMapCopy.at<uchar>(p) == 0); */
-	    /* if(bEmpty){ */
-		/* uchar cCurrent = HeightMapFilled.at<uchar>(p); */
-		/* if(cCurrent != 255){ */
-		    /* HeightMapFilled.at<uchar>(p) = (lastFilled+HeightMapFilled.at<uchar>(p))/2; */
-		/* } else { */
-		    /* HeightMapFilled.at<uchar>(p) = lastFilled; */
-		/* } */
-	    /* } else { */
-		/* lastFilled = HeightMapCopy.at<uchar>(p); */
-	    /* } */
-	/* } */
-    /* } */
     for(int j = 0; j < HeightMap.rows; j++){
-		/* If there's really an unfilled spot there */
 	uchar lastFilled = 0;
+	int distFromHole = 0;
 	for(int i = 0; i < HeightMap.cols; i++){
 	    int pType = this->getPixelType(i,j);
 	    /* if(pType == XIN_DENSER_GLAND){ */
 	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
 		uchar cCurrent = HeightMapFilled.at<uchar>(j,i);
 		if(cCurrent == 0){
-		    HeightMapFilled.at<uchar>(j,i) = lastFilled;
+		    distFromHole++;
 		} else {
-		    lastFilled = cCurrent;
-		}
-	    }
-
-	}
-
-	lastFilled = 0;
-	for(int i = HeightMap.cols - 1; i >= 0; i--){
-	    int pType = this->getPixelType(i,j);
-	    /* if(pType == XIN_DENSER_GLAND){ */
-	    if((pType != XIN_BACKGROUND) && (pType != XIN_PECTORAL_MUSCLE)){
-	    uchar cCurrent = HeightMapFilled.at<uchar>(j,i);
-		if(cCurrent == 0){
-		    if(cCurrent != 255){
-			HeightMapFilled.at<uchar>(j,i) = (lastFilled+cCurrent)/2;
-		    } else {
-			HeightMapFilled.at<uchar>(j,i) = lastFilled;
+		    uchar thisSide = cCurrent;
+		    for(int ii = distFromHole; ii > 0; ii--){
+			HeightMapFilled.at<uchar>(j,i-ii) = uchar(float(lastFilled*(ii/distFromHole)+(1-(ii/distFromHole))*thisSide));
 		    }
-		} else {
-		    lastFilled = HeightMapCopy.at<uchar>(j,i);
+		    lastFilled = cCurrent;
+		    distFromHole = 0;
 		}
 	    }
 	}
-
     }
+
     cv::Mat mCircSE2 = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2,2));
     cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE2);
     cv::imwrite(strFileName+"FatLog2.png",HeightMapFilled);
