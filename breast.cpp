@@ -232,9 +232,9 @@ void breast::getBreastBottom(){
     this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPosY);
     // Need to make "deleteUneeded" work from the polyApprox contour and/or pass it the whole point.
     // Otherwise, this works reasonably well.
-    /* cv::imwrite(strFileName + "cornerTest.png", mMammoROITest); */
+    cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
     this->mMammoROISmaller = mMammoROITest.clone();
-    /* cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm); */
+    cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
 }
 
 void breast::drawHist(){
@@ -742,7 +742,7 @@ void breast::makeXinROIMap(){
 		}
 	    }
 	}
-	cout << float(100*k/255) << "%\r" << flush;
+	/* cout << float(100*k/255) << "%\r" << flush; */
     }
     }
     HeightMapCopy = HeightMapFilled.clone();
