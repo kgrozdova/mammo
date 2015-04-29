@@ -41,7 +41,8 @@ class breast: public mammography, phantomCalibration{
 	cv::Mat mChenFatClass;
 	double dMaxPixelValue;
 	double dMinPixelValue;
-	bool bLeft;
+	bool bLeft;	// "is the breast coming from the left of the image (always true)"
+	bool bLeftNEW;	// "is this the left or right hand breast?"
 	int iHistSize = 512;
 
 	// Functions

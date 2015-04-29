@@ -44,6 +44,7 @@ void breast::pixelVec2Mat(){
 	    this->mMammo.at<Uint16>(j,i) = this->pixelVec[i+(int)this->Columns*j];
 	}
     }
+    if(this->ImageLaterality == 'R') cv::flip(mMammo,mMammo,1); // If right breast, flip. 
     cv::normalize(mMammo,mMammoNorm,0,65536, cv::NORM_MINMAX, -1, cv::Mat()); // NB: absolute pixel values meaningless in norm'd images
     this->mMammo.convertTo(mMammo8Bit, CV_8U, 1./256); // Leaves pixel values proportional to 16 bit / 8 bit but loses a lot of resolution
     this->mMammoNorm.convertTo(mMammo8BitNorm, CV_8U, 1./256);
@@ -340,7 +341,9 @@ bool breast::leftOrRight(){
 	/* 	} */
 	/* } */
 	/* this->bLeft = iTotalGap < 0; */
-	this->bLeft = (this->ImageLaterality == 'L');
+	/* this->bLeft = (this->ImageLaterality == 'L'); */
+	this->bLeft = true;
+	this->bLeftNEW = (this->ImageLaterality == 'L');
 	return bLeft;
 }
 
