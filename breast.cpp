@@ -18,7 +18,7 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
     this->strFileName = breast::fileNameErase(t_strFileName);
     this->pixelVec2Mat();
     this->mChenFatClass = cv::imread(this->strFileName+"Label.tiff");
-    cv::resize(mChenFatClass,mChenFatClass,this->mMammo.size());
+    cv::resize(mChenFatClass,mChenFatClass,this->mMammo.size(),0,0,cv::INTER_NEAREST);
     cv::minMaxLoc(mMammo,&this->dMinPixelValue,&this->dMaxPixelValue);
     this->getBreastROI();
     this->getBreastDistMap();
@@ -35,6 +35,8 @@ breast::breast(std::string t_strFileName): mammography(t_strFileName){
     this->getRadialThickness();
     this->makeXinROIMap();
     }
+
+    this->getDensityROI();
 }
 
 void breast::pixelVec2Mat(){
@@ -202,6 +204,7 @@ void breast::getBreastBottom(){
     }
     // pEdgeAngleDeltas[i] = the angle of the corner at pEdgeCont...[i+1]
 
+#ifdef OAB_DRAW_DEBUG
     for(int i = 1; i < pEdgePolyApprox.size() ; i++){
 	double iRadius = pEdgeAngleDeltas[i-1];
 	cv::Point pTemp = pEdgePolyApprox[i];
@@ -209,32 +212,39 @@ void breast::getBreastBottom(){
 	    cv::circle(mMammoROITest, pTemp, iRadius, 120, -1);
 	}
     }
+#endif
     int iContPosY = mMammo.rows;
     int iContPosX;
+    int iFinal = 0;
     for(int i = 1; i < (int)pEdgePolyApprox.size(); i++){
 	if(pEdgeAngleDeltas[i-1] > 10){
 	    if(pEdgePolyApprox[i].y > 2*float(mMammo.rows)/3){
-		if(bLeft){
-		    if(pEdgePolyApprox[i].x < float(0.25*mMammo.cols)){
-			iContPosY = std::min(pEdgePolyApprox[i].y,iContPosY);
-			iContPosX = pEdgePolyApprox[i].x;
-		    }
-		} else {
-		    if(pEdgePolyApprox[i].x > float(0.75*mMammo.cols)){
-			iContPosY = std::min(pEdgePolyApprox[i].y,iContPosY);
-			iContPosX = pEdgePolyApprox[i].x;
-		    }
+		if(pEdgePolyApprox[i].x < float(0.25*mMammo.cols)){
+		    /* iContPosY = std::min(pEdgePolyApprox[i].y,iContPosY); */
+		    iContPosY = pEdgePolyApprox[i].y;
+		    iContPosX = pEdgePolyApprox[i].x;
+		    iFinal = i;
 		}
 	    }
 	}
     }
+    vector<cv::Point> pEdgePointsToFill;
+    for(int i = iFinal; i > 0; i--){
+	pEdgePointsToFill.push_back(pEdgePolyApprox[i]);
+    }
+    pEdgePointsToFill.push_back(cv::Point(0,iContPosY));
+    vector<vector<cv::Point>> pEPTF;
+    pEPTF.push_back(pEdgePointsToFill);
+    cv::fillPoly(mMammoROITest,pEPTF,0);
+
+    /* this->deleteUnneeded(bLeft, mMammoROITest, pEdgePolyApprox, iContPosY); */
+#ifdef OAB_DRAW_DEBUG
     cv::circle(mMammoROITest, cv::Point(iContPosX,iContPosY), 10, 0, -1);
-    this->deleteUnneeded(bLeft, mMammoROITest, pEdgeContour, iContPosY);
+#endif
     // Need to make "deleteUneeded" work from the polyApprox contour and/or pass it the whole point.
     // Otherwise, this works reasonably well.
     cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
     this->mMammoROISmaller = mMammoROITest.clone();
-    cv::imwrite(strFileName + "mammoTest.png", mMammo8BitNorm);
 }
 
 void breast::drawHist(){
@@ -529,6 +539,18 @@ std::vector<float> breast::normalBreastThickness(std::vector<float> vecDistBrigh
     return vecDistBrightBrightest;
 }
 
+
+void breast::getDensityROI(){
+    for(int i = 0; i < this->mMammo.cols; i++){
+	for(int j = 0; j < this->mMammo.rows; j++){
+	    int t = this->getPixelType(i,j);
+	    if((t == XIN_BACKGROUND) || (t == XIN_NIPPLE) || (t == XIN_PECTORAL_MUSCLE)){
+		this->mMammoROISmaller.at<uchar>(j,i) = 0;
+	    }
+	}
+    }
+    cv::imwrite(this->strFileName+"FinalROI.png",this->mMammoROISmaller);
+}
 void breast::drawImages(string fileName, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
     /* fileName.pop_back(); */
     /* int dist_w = histSize*2; */
@@ -772,7 +794,7 @@ void breast::makeXinROIMap(){
     }
 
     cv::Mat mCircSE2 = cv::getStructuringElement(cv::MORPH_ELLIPSE,cv::Size(2,2));
-    cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE2);
+    /* cv::morphologyEx(HeightMapFilled,HeightMapFilled,cv::MORPH_CLOSE,mCircSE2); */
     cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
     cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
     cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
@@ -821,7 +843,7 @@ int breast::getPixelType(int x, int y){
 }
 
 bool breast::isBreast(int x, int y){
-    return (mMammoROI.at<uchar>(y,x) > 0);
+    return (mMammoROISmaller.at<uchar>(y,x) > 0);
 }
 
 void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<cv::Point> contactBorderShapeVal){
