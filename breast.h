@@ -86,8 +86,9 @@ class breast: public mammography, phantomCalibration{
         void deleteUnneeded(const bool bLeft, cv::Mat mMammoThreshedCopy, const std::vector<cv::Point> pEdgeContourCopy, const int iContPosY);
         void drawImages(std::string fileName, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize);
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
-        double totalBreast();
+        double totalBreast(const phantomCalibration calib, const string filTar, const string kV, const double exposure);
         static pair<double,double> glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t);
+        static double glandpercentInverse(const double MPV, const phantomCalibration calib, const string filTar, const string kV, const double exposure);
         double breastThickAtPixel(const int i, const int j, const phantomCalibration calib, const string filTar, const string kV, const double t, const double exposure);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 
@@ -127,6 +128,8 @@ class breast: public mammography, phantomCalibration{
     double averageDistance(const vector<float> plane, vector<cv::Point> breastFatDiscarded);
     vector<cv::Point> contactBorder2(const vector<float> plane, vector<cv::Point> contactBorderFin, const double averageDiffVal);
     vector<cv::Point> contactBorderCorrection(vector<cv::Point> contactBorder2Vec);
+
+    double fibrogland(const phantomCalibration calib, const string strKVP, const double exposure, const dailyCalibration dcalib);
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
 };

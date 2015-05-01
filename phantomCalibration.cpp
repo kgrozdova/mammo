@@ -13,13 +13,16 @@ void phantomCalibration::getThicknessData(const string filTar, const int kV){
     string str, gland, ln_MPV_mAs;
     size_t found,found2, found3, found4;
     string kVStr = various::ToString<int>(kV);
+    int counter(0);
     for(int i = 20; i <= 70; i+= 10){
         rawData[i];
         fileName = "av_calib_data" +     filTar + kVStr + "_" + to_string(i) + ".csv";
         ifs.open(fileName, ifstream::in);
         while (ifs.good()){
             getline(ifs, str);
+            counter++;
             if( ifs.eof() ) break;
+            if(counter != 1){
             found = str.find(",");
             found2 = str.find(",",found+1);
             found3 = str.find(",",found2+1);
@@ -28,9 +31,12 @@ void phantomCalibration::getThicknessData(const string filTar, const int kV){
             ln_MPV_mAs = str.substr(found3+1, found4-found3-1);
             rawData[i].push_back(make_pair(atof(gland.c_str()), atof(ln_MPV_mAs.c_str())));
             //inputData(rawData, i, atof(gland.c_str()), atof(ln_MPV_mAs.c_str()));
+            }
         }
+        counter = 0;
         ifs.close();
     }
+    counter = 0;
     if(kV == 29 && filTar == "RhRh"){
         for(int i = 5; i <= 10; i+= 5){
             rawData[i];
@@ -38,7 +44,9 @@ void phantomCalibration::getThicknessData(const string filTar, const int kV){
             ifs.open(fileName, ifstream::in);
             while (ifs.good()){
                 getline(ifs, str);
-                if( ifs.eof() ) break;
+                counter++;
+                if( ifs.eof()) break;
+                if(counter != 1){
                 found = str.find(",");
                 found2 = str.find(",",found+1);
                 found3 = str.find(",",found2+1);
@@ -47,16 +55,21 @@ void phantomCalibration::getThicknessData(const string filTar, const int kV){
                 ln_MPV_mAs = str.substr(found3+1, found4-found3-1);
                 rawData[i].push_back(make_pair(atof(gland.c_str()), atof(ln_MPV_mAs.c_str())));
                 //inputData(rawData, i, atof(gland.c_str()), atof(ln_MPV_mAs.c_str()));
+                }
             }
+            counter  = 0;
             ifs.close();
         }
+        counter = 0;
         int i = 65;
         rawData[i];
         fileName = "av_calib_data" + filTar + kVStr + "_" + to_string(i) + ".csv";
         ifs.open(fileName, ifstream::in);
         while (ifs.good()){
             getline(ifs, str);
+            counter++;
             if( ifs.eof() ) break;
+            if(counter != 1){
             found = str.find(",");
             found2 = str.find(",",found+1);
             found3 = str.find(",",found2+1);
@@ -65,6 +78,7 @@ void phantomCalibration::getThicknessData(const string filTar, const int kV){
             ln_MPV_mAs = str.substr(found3+1, found4-found3-1);
             rawData[i].push_back(make_pair(atof(gland.c_str()), atof(ln_MPV_mAs.c_str())));
             //inputData(rawData, i, atof(gland.c_str()), atof(ln_MPV_mAs.c_str()));
+            }
         }
         ifs.close();
     }

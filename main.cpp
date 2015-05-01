@@ -103,7 +103,7 @@ int main(int argc, char** argv){
 
     //
     // DRAWING THE PICTURES
-#ifdef KSENIA_STUFF
+//#ifdef KSENIA_STUFF
     //cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
     //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     //breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
@@ -113,9 +113,9 @@ int main(int argc, char** argv){
      string Exposure = various::ToString<long>(breastDat.Exposure);
       double thickness = atoi(bodyThickness.c_str());
       double exposure = atoi(Exposure.c_str());
-    vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
-    map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
-    breastDat.applyExposureCorrection(breastDistMap);
+    //vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
+    //map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
+    //breastDat.applyExposureCorrection(breastDistMap);
      dailyCalibration dcalib;
      dcalib.insertFilTar(breastDat);
      dcalib.InserQcTTg(breastDat, "qc.dat");
@@ -123,40 +123,13 @@ int main(int argc, char** argv){
      calib.getThicknessData(dcalib.filTar, atoi(strKVP.c_str()));
 
       //pair<double,double> coeff3;
-      double tg(0);
-      double tgTemp;
-       ofstream myfile;
-       myfile.open ("example2.txt");
-       int num(0);
-       for(int i = 0; i < breastDat.mMammo.cols; i++){
-           for(int j = 0; j < breastDat.mMammo.rows; j++){
-               if(breastDat.isBreast(j,i)){
-                   //thickness = breastDat.getHeight(j, i);
-                   //coeff3 = breast::glandpercent(calib, dcalib.filTar, KVP, thickness);
-                   if(int(breastDat.mMammo.at<Uint16>(j,i)) == 0){
-                       tgTemp = thickness;
-                   } else{
-                        tgTemp = breastDat.breastThickAtPixel(i, j, calib, dcalib.filTar, strKVP, thickness, exposure);
-                   }
-                   if(tgTemp >= 0 && tgTemp <= thickness){
-                       tg += tgTemp;
-                   }else if(tgTemp > thickness){
-                       tg += thickness;
-                   } else{
-                       tg += 0;
-                   }
-                   myfile << int(breastDat.mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
-                   num++;
-               }
-           }
-       }
-       myfile.close();
-       double t = breastDat.totalBreast();
+       double t = breastDat.totalBreast(calib, dcalib.filTar, strKVP, exposure);
        //breastDat.fatRow(1000);
        //breastDat.thicknessMap(dcalib, calib, KVP, exposure);
        //breastDat.thicknessMapRedVal(coeff3, exposure);
+       double tg = breastDat.fibrogland(calib, strKVP, exposure, dcalib);
        cout << tg/t*100 << endl;
     vector<cv::Point> contactBorder = breastDat.getContact();
     //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
-#endif
+//#endif
 }

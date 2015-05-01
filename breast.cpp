@@ -46,7 +46,7 @@ void breast::pixelVec2Mat(){
 	    this->mMammo.at<Uint16>(j,i) = this->pixelVec[i+(int)this->Columns*j];
 	}
     }
-    if(this->ImageLaterality == 'R') cv::flip(mMammo,mMammo,1); // If right breast, flip. 
+    if(this->ImageLaterality == 'R') cv::flip(mMammo,mMammo,1); // If right breast, flip.
     cv::normalize(mMammo,mMammoNorm,0,65536, cv::NORM_MINMAX, -1, cv::Mat()); // NB: absolute pixel values meaningless in norm'd images
     this->mMammo.convertTo(mMammo8Bit, CV_8U, 1./256); // Leaves pixel values proportional to 16 bit / 8 bit but loses a lot of resolution
     this->mMammoNorm.convertTo(mMammo8BitNorm, CV_8U, 1./256);
@@ -582,18 +582,18 @@ void breast::drawImages(string fileName, const cv::Mat mCornerTresh, const cv::M
     #endif
 }
 
-double breast::totalBreast(){
+double breast::totalBreast(const phantomCalibration calib, const string filTar, const string kV, const double exposure){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
-    int thickness = atoi(bodyThickness.c_str());
-    int counter(0);
-    for(int i = 0; i < mMammoROI.cols; i++){
-        for(int j = 0; j < mMammoROI.rows; j++){
-	    // This used to be " == 1" - I don't understand why?
-            if(mMammoROI.at<Uint8>(j,i) != 0)
-               counter++;
+    double thickness = atoi(bodyThickness.c_str());
+    double breastThick(0);
+    for(int i = 0; i < mMammo.cols; i++){
+        for(int j = 0; j < mMammo.rows; j++){
+            if(isBreast(j,i)){
+                breastThick += breast::glandpercentInverse(double(this->getHeight(j,i)), calib, filTar, kV, exposure);
+            }
         }
     }
-    return double(counter*thickness);
+    return breastThick;
 }
 
 pair<double,double> breast::glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t){
@@ -609,6 +609,15 @@ pair<double,double> breast::glandpercent(const phantomCalibration calib, const s
     double b = a_calc*t+b_calc;
     pair<double,double> ret = {a,b};
     return ret;
+}
+
+double breast::glandpercentInverse(const double MPV, const phantomCalibration calib, const string filTar, const string kV, const double exposure){
+    map<string, double> b_a = {{"MoMo", -0.053}, {"MoRh26", -0.041}, {"MoRh27", -0.0466}, {"MoRh28", -0.053}, {"MoRh29", -0.046}, {"RhRh29", -0.047}, {"RhRh30", -0.042}, {"RhRh31", -0.041}};
+    map<string, double> b_b = {{"MoMo", 4.402}, {"MoRh26", 4.321}, {"MoRh27", 4.827}, {"MoRh28", 5.173}, {"MoRh29", 5.123}, {"RhRh29", 5.39}, {"RhRh30", 5.313}, {"RhRh31", 5.444}};
+    string lookFor = filTar+kV;
+    double a_calc = b_a.find(lookFor)->second;
+    double b_calc = b_b.find(lookFor)->second;
+    return (log(MPV/exposure)-b_calc)/a_calc;
 }
 
 void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int exposure){
@@ -1354,4 +1363,35 @@ double breast::averageDistance(const vector<float> plane, vector<cv::Point> brea
 double breast::breastThickAtPixel(const int i, const int j, const phantomCalibration calib, const string filTar, const string strKVP, const double t, const double exposure){
     pair<double,double> coeff3 = breast::glandpercent(calib, filTar, strKVP, t);
     return (log(double(this->mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
+}
+
+double breast::fibrogland(const phantomCalibration calib, const string strKVP, const double exposure, const dailyCalibration dcalib){
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
+    double thickness = atoi(bodyThickness.c_str());
+    cout << thickness << endl;
+      double tg(0);
+      double tgTemp;
+       ofstream myfile;
+       myfile.open ("example2.txt");
+       for(int i = 0; i < this->mMammo.cols; i++){
+           for(int j = 0; j < this->mMammo.rows; j++){
+               if(this->isBreast(j,i)){
+                   if(int(this->mMammo.at<Uint16>(j,i)) == 0){
+                       tgTemp = thickness;
+                   } else{
+                        tgTemp = this->breastThickAtPixel(i, j, calib, dcalib.filTar, strKVP, breast::glandpercentInverse(double(this->getHeight(j,i)), calib, dcalib.filTar, strKVP, exposure), exposure);
+                   }
+                   if(tgTemp >= 0 && tgTemp <= thickness){
+                       tg += tgTemp;
+                   }else if(tgTemp > thickness){
+                       tg += thickness;
+                   } else{
+                       tg += 0;
+                   }
+                   myfile << int(this->mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
+               }
+           }
+       }
+       myfile.close();
+       return tg;
 }
