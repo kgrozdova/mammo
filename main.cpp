@@ -129,7 +129,7 @@ int main(int argc, char** argv){
        //breastDat.thicknessMapRedVal(coeff3, exposure);
        double tg = breastDat.fibrogland(calib, strKVP, exposure, dcalib);
        cout << tg/t*100 << endl;
-    vector<cv::Point> contactBorder = breastDat.getContact();
+    //vector<cv::Point> contactBorder = breastDat.getContact();
     //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
 //#endif
 }

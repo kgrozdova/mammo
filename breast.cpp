@@ -589,7 +589,7 @@ double breast::totalBreast(const phantomCalibration calib, const string filTar, 
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
             if(isBreast(j,i)){
-                breastThick += breast::glandpercentInverse(double(this->getHeight(j,i)), calib, filTar, kV, exposure);
+                breastThick += breast::glandpercentInverse(double(this->getHeight(j,i)), filTar, kV, exposure);
             }
         }
     }
@@ -611,7 +611,7 @@ pair<double,double> breast::glandpercent(const phantomCalibration calib, const s
     return ret;
 }
 
-double breast::glandpercentInverse(const double MPV, const phantomCalibration calib, const string filTar, const string kV, const double exposure){
+double breast::glandpercentInverse(const double MPV, const string filTar, const string kV, const double exposure){
     map<string, double> b_a = {{"MoMo", -0.053}, {"MoRh26", -0.041}, {"MoRh27", -0.0466}, {"MoRh28", -0.053}, {"MoRh29", -0.046}, {"RhRh29", -0.047}, {"RhRh30", -0.042}, {"RhRh31", -0.041}};
     map<string, double> b_b = {{"MoMo", 4.402}, {"MoRh26", 4.321}, {"MoRh27", 4.827}, {"MoRh28", 5.173}, {"MoRh29", 5.123}, {"RhRh29", 5.39}, {"RhRh30", 5.313}, {"RhRh31", 5.444}};
     string lookFor = filTar+kV;
@@ -1072,11 +1072,11 @@ string breast::heightRowArray(vector<cv::Point> contactBorder2Vec, const string 
     string RowArray = "[";
     int counter(0);
     for(vector<cv::Point>::iterator it = contactBorder2Vec.begin(); it != contactBorder2Vec.end(); it++){
-        if(this->mHeightMap.at<float>(it->y,it->x) != 0){
+        if(this->mHeightMap16.at<Uint16>(it->y,it->x) != 0){
             if(xOrY == "x"){
                 RowArray.append(to_string(it->x));
             } else{
-                RowArray.append(to_string(double(this->mHeightMap.at<uchar>(it->y,it->x))));
+                RowArray.append(to_string(double(this->mHeightMap16.at<Uint16>(it->y,it->x))));
             }
             RowArray.append(",");
             counter++;
@@ -1095,11 +1095,11 @@ string breast::heightRowArray(vector<cv::Point> contactBorder2Vec, const string 
 pair<cv::Point,float> breast::straightLevel(const int row){
    pair<cv::Point,float> straightLevelPoint;
    int counter(0);
-        for(int i = 0; i < this->mHeightMap.cols; i++){
+        for(int i = 0; i < this->mHeightMap16.cols; i++){
             if(this->getPixelType(i,row) == XIN_FAT){
-                if(double(this->mHeightMap.at<uchar>(row,i)) != 0){
+                if(double(this->mHeightMap16.at<Uint16>(row,i)) != 0){
                     counter++;
-                    straightLevelPoint = make_pair(cv::Point(i,row),float(this->mHeightMap.at<uchar>(row,i)));
+                    straightLevelPoint = make_pair(cv::Point(i,row),float(this->mHeightMap16.at<Uint16>(row,i)));
                     if(counter >1 )
                         break;
                 }
@@ -1133,7 +1133,7 @@ double breast::averageDiffBorder(const vector<cv::Point> contactBorder, const ve
     return sum/double(countVal)+20;
 }
 
-vector<cv::Point> breast::contactBorder(){
+vector<cv::Point> breast::contactBorder(const string strKVP, const double exposure, const dailyCalibration dcalib){
     vector<cv::Point> contactBorderPoints;
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     double thickness = atoi(bodyThickness.c_str());
@@ -1145,7 +1145,7 @@ vector<cv::Point> breast::contactBorder(){
     //alglib::spline1dinterpolant s;
     //string RowArrayX, RowArrayY;
     int counter(0);
-    for(int i = 0; i < this->mHeightMap.rows; i++){
+    for(int i = 0; i < this->mHeightMap16.rows; i++){
         //RowArrayX = this->heightRowArray(i, "x");
         //RowArrayY = this->heightRowArray(i, "y");
         //if(RowArrayX != "" && RowArrayX != ""){
@@ -1153,12 +1153,12 @@ vector<cv::Point> breast::contactBorder(){
             //y =  alglib::real_1d_array(RowArrayY.c_str());
             //spline1dbuildcubic(x, y, s);
             straightLevelConst = this->straightLevel(i).second*thickness/255;
-                for(int j = 0; j < this->mHeightMap.cols; j++){
+                for(int j = 0; j < this->mHeightMap16.cols; j++){
                     if(this->getPixelType(j,i) == XIN_FAT){
-                    if(float(this->mHeightMap.at<uchar>(i,j)) != 0){
+                    if(float(this->mHeightMap16.at<Uint16>(i,j)) != 0){
                     counter++;
                     //deltaY = (straightLevelConst - spline1dcalc(s, j))/10.0;
-                    deltaY = (straightLevelConst - float(this->mHeightMap.at<uchar>(i,j))*thickness/255)/10.0;
+                    deltaY = (straightLevelConst - breast::glandpercentInverse(double(this->getHeight(i,j)), dcalib.filTar, strKVP, exposure))/10.0;
                     if(deltaY > 0.5  && counter > 1){
                         contactBorderPoints.push_back(cv::Point(j,i));
                         break;
@@ -1171,20 +1171,20 @@ vector<cv::Point> breast::contactBorder(){
     return contactBorderPoints;
 }
 
-vector<cv::Point> breast::contactBorder2(const vector<float> plane, vector<cv::Point> contactBorderFin, const double averageDiffVal){
+vector<cv::Point> breast::contactBorder2(const vector<float> plane, vector<cv::Point> contactBorderFin, const double averageDiffVal, const string strKVP, const double exposure, const dailyCalibration dcalib){
     vector<cv::Point> contactBorderPoints;
-    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
-    double thickness = atoi(bodyThickness.c_str());
+    double thickness;
     double numerator, denominator, temp;
     double distance(0);
     int counter(0);
     for(vector<cv::Point>::iterator it = contactBorderFin.begin(); it != contactBorderFin.end(); it++){
-        for(int  i = 0; i < mHeightMap.cols; i++){
+        for(int  i = 0; i < mHeightMap16.cols; i++){
             if(this->getPixelType(i,it->y) == XIN_FAT){
                 counter++;
-                if(it->y < mHeightMap.cols/2 && (counter > 45) ){
+                if(it->y < mHeightMap16.cols/2 && (counter > 45) ){
                     if(this->mMammoDist.at<float>(it->y,i) > (averageDiffVal+45)){
-                        numerator = plane[0]*it->y+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(it->y,i))*thickness/255+plane[3];
+                        thickness = breast::glandpercentInverse(double(this->getHeight(it->y,i)), dcalib.filTar, strKVP, exposure);
+                        numerator = plane[0]*it->y+plane[1]*i+plane[2]*thickness+plane[3];
                         denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
                         temp = numerator/denominator;
                         if(temp < 0)
@@ -1192,9 +1192,10 @@ vector<cv::Point> breast::contactBorder2(const vector<float> plane, vector<cv::P
                         if(temp > distance)
                             distance = temp;
                     }
-                }else if(it->y > mHeightMap.cols/2 && (counter > 55) ){
+                }else if(it->y > mHeightMap16.cols/2 && (counter > 55) ){
                     if(this->mMammoDist.at<float>(it->y,i) > (averageDiffVal+55)){
-                        numerator = plane[0]*it->y+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(it->y,i))*thickness/255+plane[3];
+                        thickness = breast::glandpercentInverse(double(this->getHeight(it->y,i)), dcalib.filTar, strKVP, exposure);
+                        numerator = plane[0]*it->y+plane[1]*i+plane[2]*thickness+plane[3];
                         denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
                         temp = numerator/denominator;
                         if(temp < 0)
@@ -1205,9 +1206,10 @@ vector<cv::Point> breast::contactBorder2(const vector<float> plane, vector<cv::P
                 }
             }
         }
-        for(int  i = 0; i < mHeightMap.cols; i++){
+        for(int  i = 0; i < mHeightMap16.cols; i++){
             if(this->getPixelType(i,it->y) == XIN_FAT){
-                numerator = plane[0]*it->y+plane[1]*i+plane[2]*float(this->mHeightMap.at<uchar>(it->y,i))*thickness/255+plane[3];
+                thickness = breast::glandpercentInverse(double(this->getHeight(it->y,i)), dcalib.filTar, strKVP, exposure);
+                numerator = plane[0]*it->y+plane[1]*i+plane[2]*thickness+plane[3];
                 denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
                 temp = numerator/denominator;
                 if(temp < 0){
@@ -1241,14 +1243,14 @@ vector<cv::Point> breast::pointsFatForPlane(vector<cv::Point> contactBorderFin, 
     vector<cv::Point> pointFatDiscarded;
     int counter(0);
     for(vector<cv::Point>::iterator it = contactBorderFin.begin(); it != contactBorderFin.end(); it++){
-        for(int  i = 1; i < mHeightMap.cols; i++){
+        for(int  i = 1; i < mHeightMap16.cols; i++){
             if(this->getPixelType(i,it->y) == XIN_FAT){
                 counter++;
-                if(it->y < mHeightMap.cols/2 && (counter > 45) ){
+                if(it->y < mHeightMap16.cols/2 && (counter > 45) ){
                     if(this->mMammoDist.at<float>(it->y,i) > (averageDiffVal+45)){
                         pointFatDiscarded.push_back(cv::Point(it->y,i));
                     }
-                }else if(it->y > mHeightMap.cols/2 && (counter > 45) ){
+                }else if(it->y > mHeightMap16.cols/2 && (counter > 45) ){
                     if(this->mMammoDist.at<float>(it->y,i) > (averageDiffVal+55)){
                         pointFatDiscarded.push_back(cv::Point(it->y,i));
                     }
@@ -1260,21 +1262,21 @@ vector<cv::Point> breast::pointsFatForPlane(vector<cv::Point> contactBorderFin, 
     return pointFatDiscarded;
 }
 
-vector<cv::Point> breast::getContact(){
+vector<cv::Point> breast::getContact(const string strKVP, const double exposure, const dailyCalibration dcalib){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     /* double thickness = atoi(bodyThickness.c_str()); */
-    vector<cv::Point> contactBorderPoints =  this->contactBorder();
+    vector<cv::Point> contactBorderPoints =  this->contactBorder(strKVP, exposure, dcalib);
     vector<cv::Point> breastBorderPoints  = this->breastBorder();
     double averageDiffVal = this->averageDiffBorder(contactBorderPoints, breastBorderPoints);
     vector<cv::Point> contactBorderFin = this->contactBorderFinal(contactBorderPoints, averageDiffVal);
     vector<cv::Point> breastFatDiscarded = this->pointsFatForPlane(contactBorderFin, averageDiffVal);
-    vector<float> m = this->fitPlane(breastFatDiscarded);
+    vector<float> m = this->fitPlane(breastFatDiscarded, strKVP, exposure, dcalib);
     //cout << "m: " << m[0] << " " << m[1] << " " << m[2] << " " << m[3] << endl;
-    vector<cv::Point> contactBorder2Vec = this->contactBorder2(m, contactBorderFin, averageDiffVal);
+    vector<cv::Point> contactBorder2Vec = this->contactBorder2(m, contactBorderFin, averageDiffVal, strKVP, exposure, dcalib);
     return contactBorderFin;
 }
 
-vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded){
+vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded, const string strKVP, const double exposure, const dailyCalibration dcalib){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     double thickness = atoi(bodyThickness.c_str());
     int vecLength = breastFatDiscarded.size();
@@ -1282,10 +1284,10 @@ vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded){
     //ofstream myfile;
     //myfile.open ("pointsChosen.txt");
     for(int  i = 0; i < vecLength; i++){
-        if(float(this->mHeightMap.at<uchar>(breastFatDiscarded[i].y,breastFatDiscarded[i].x)) != 0){
+        if(float(this->mHeightMap16.at<uchar>(breastFatDiscarded[i].y,breastFatDiscarded[i].x)) != 0){
         temp.push_back(float(breastFatDiscarded[i].x));
         temp.push_back(float(breastFatDiscarded[i].y));
-        temp.push_back(float(this->mHeightMap.at<uchar>(breastFatDiscarded[i].x,breastFatDiscarded[i].y)*thickness/255));
+        temp.push_back( breast::glandpercentInverse(double(this->getHeight(breastFatDiscarded[i].x,breastFatDiscarded[i].y)), dcalib.filTar, strKVP, exposure));
         //myfile << float(breastFatDiscarded[i].x) << " " << float(breastFatDiscarded[i].y) << " " << float(this->mHeightMap.at<uchar>(breastFatDiscarded[i].y,breastFatDiscarded[i].x))*thickness/255 << "\n";
         }
     }
@@ -1315,15 +1317,15 @@ vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded){
     return resultPlane;
 }
 
-void  breast::fatRow(const int row){
+void  breast::fatRow(const int row, const string strKVP, const double exposure, const dailyCalibration dcalib){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     double thickness = atoi(bodyThickness.c_str());
     ofstream myfile;
     myfile.open ("fatRow.txt");
-    for(int i = 0; i < this->mHeightMap.cols; i++){
+    for(int i = 0; i < this->mHeightMap16.cols; i++){
         if(this->getPixelType(i,row) == XIN_FAT){
-            if(float(this->mHeightMap.at<uchar>(row,i)) != 0)
-                myfile << i << " " << float(this->mHeightMap.at<uchar>(row,i))*thickness/255 << "\n";
+            if(float(this->mHeightMap16.at<Uint16>(row,i)) != 0)
+                myfile << i << " " << breast::glandpercentInverse(double(this->getHeight(row,i)), dcalib.filTar, strKVP, exposure) << "\n";
         }
     }
     myfile.close();
@@ -1334,23 +1336,23 @@ double breast::getPlaneAngle(const vector<float> plane){
     return acos(arg)*180/M_PI;
 }
 
-double breast::averageDistance(const vector<float> plane, vector<cv::Point> breastFatDiscarded){
-    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
-    double thickness = atoi(bodyThickness.c_str());
+double breast::averageDistance(const vector<float> plane, vector<cv::Point> breastFatDiscarded, const string strKVP, const double exposure, const dailyCalibration dcalib){
     double avTemp(0);
     int counter(0);
     int vecLength = breastFatDiscarded.size();
     double numerator, denominator;
     vector<cv::Point> breastPointsUsed;
     for(int  i = 0; i < vecLength; i++){
-        if(float(this->mHeightMap.at<uchar>(breastFatDiscarded[i].y,breastFatDiscarded[i].x)) != 0){
+        if(float(this->mHeightMap16.at<Uint16>(breastFatDiscarded[i].y,breastFatDiscarded[i].x)) != 0){
         breastPointsUsed.push_back(cv::Point(breastFatDiscarded[i].x, breastFatDiscarded[i].y));
         }
     }
     vecLength = breastPointsUsed.size();
     counter++;
+    double thickness;
     for(int i = 0; i < vecLength; i++){
-       numerator = plane[0]*breastPointsUsed[i].x+plane[1]*breastPointsUsed[i].y+plane[2]*float(this->mHeightMap.at<uchar>(breastPointsUsed[i].x,breastPointsUsed[i].y))*thickness/255+plane[3];
+        thickness = breast::glandpercentInverse(double(this->getHeight(breastPointsUsed[i].x,breastPointsUsed[i].y)), dcalib.filTar, strKVP, exposure);
+       numerator = plane[0]*breastPointsUsed[i].x+plane[1]*breastPointsUsed[i].y+plane[2]*thickness+plane[3];
         denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
         avTemp += numerator/denominator;
         counter++;
@@ -1368,7 +1370,6 @@ double breast::breastThickAtPixel(const int i, const int j, const phantomCalibra
 double breast::fibrogland(const phantomCalibration calib, const string strKVP, const double exposure, const dailyCalibration dcalib){
     string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     double thickness = atoi(bodyThickness.c_str());
-    cout << thickness << endl;
       double tg(0);
       double tgTemp;
        ofstream myfile;
@@ -1379,7 +1380,7 @@ double breast::fibrogland(const phantomCalibration calib, const string strKVP, c
                    if(int(this->mMammo.at<Uint16>(j,i)) == 0){
                        tgTemp = thickness;
                    } else{
-                        tgTemp = this->breastThickAtPixel(i, j, calib, dcalib.filTar, strKVP, breast::glandpercentInverse(double(this->getHeight(j,i)), calib, dcalib.filTar, strKVP, exposure), exposure);
+                        tgTemp = this->breastThickAtPixel(i, j, calib, dcalib.filTar, strKVP, breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure), exposure);
                    }
                    if(tgTemp >= 0 && tgTemp <= thickness){
                        tg += tgTemp;
@@ -1392,6 +1393,7 @@ double breast::fibrogland(const phantomCalibration calib, const string strKVP, c
                }
            }
        }
+
        myfile.close();
        return tg;
 }
