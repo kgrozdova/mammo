@@ -19,10 +19,6 @@
 #include "scanner.h"
 
 /* #define KSENIA_STUFF */
-#ifdef KSENIA_STUFF
-    #include "interpolation.h"
-    #include "stdafx.h"
-#endif 
 
 using namespace std;
 

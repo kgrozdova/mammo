@@ -1382,18 +1382,18 @@ double breast::fibrogland(const phantomCalibration calib, const string strKVP, c
            for(int j = 0; j < this->mMammo.rows; j++){
                if(this->isBreast(j,i)){
                    if(int(this->mMammo.at<Uint16>(j,i)) == 0){
-                       tgTemp = thickness;
+                       tgTemp = breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure);
                    } else{
                         tgTemp = this->breastThickAtPixel(i, j, calib, dcalib.filTar, strKVP, breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure), exposure);
                    }
-                   if(tgTemp >= 0 && tgTemp <= thickness){
+                   if(tgTemp >= 0 && tgTemp <= breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure)){
                        tg += tgTemp;
-                   }else if(tgTemp > thickness){
-                       tg += thickness;
+                   }else if(tgTemp > breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure)){
+                       tg += breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure);
                    } else{
                        tg += 0;
                    }
-                   myfile << int(this->mMammo.at<Uint16>(j,i))<< " " << tgTemp << "\n";
+                   myfile << breast::glandpercentInverse(double(this->getHeight(j,i)), dcalib.filTar, strKVP, exposure) << " " << tgTemp << "\n";
                }
            }
        }
