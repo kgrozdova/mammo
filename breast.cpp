@@ -617,7 +617,10 @@ double breast::glandpercentInverse(const double MPV, const string filTar, const 
     string lookFor = filTar+kV;
     double a_calc = b_a.find(lookFor)->second;
     double b_calc = b_b.find(lookFor)->second;
-    return (log(MPV/exposure)-b_calc)/a_calc;
+    double t = (log(MPV/exposure)-b_calc)/a_calc;
+    if(t < 0)
+        t = 0;
+    return t;
 }
 
 void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int exposure){
@@ -659,7 +662,7 @@ void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int expo
             }
         }
     }
-    /* cv::imwrite("test_thickMapRed.png",dst); */
+    cv::imwrite("test_thickMapRed.png",dst);
 }
 
 Uint16 breast::getHeight(int x, int y){
@@ -1325,7 +1328,8 @@ void  breast::fatRow(const int row, const string strKVP, const double exposure, 
     for(int i = 0; i < this->mHeightMap16.cols; i++){
         if(this->getPixelType(i,row) == XIN_FAT){
             if(float(this->mHeightMap16.at<Uint16>(row,i)) != 0)
-                myfile << i << " " << breast::glandpercentInverse(double(this->getHeight(row,i)), dcalib.filTar, strKVP, exposure) << "\n";
+                if(breast::glandpercentInverse(double(this->getHeight(row,i)), dcalib.filTar, strKVP, exposure) != 0)
+                    myfile << i << " " << breast::glandpercentInverse(double(this->getHeight(row,i)), dcalib.filTar, strKVP, exposure) << "\n";
         }
     }
     myfile.close();

@@ -124,11 +124,17 @@ int main(int argc, char** argv){
 
       //pair<double,double> coeff3;
        double t = breastDat.totalBreast(calib, dcalib.filTar, strKVP, exposure);
-       //breastDat.fatRow(1000);
-       //breastDat.thicknessMap(dcalib, calib, KVP, exposure);
+       //breastDat.fatRow(900, strKVP, exposure, dcalib);
+       //breastDat.thicknessMap(calib, strKVP, exposure, dcalib);
        //breastDat.thicknessMapRedVal(coeff3, exposure);
        double tg = breastDat.fibrogland(calib, strKVP, exposure, dcalib);
-       cout << tg/t*100 << endl;
+       //cout << tg/t*100 << endl;
+       ostringstream strs;
+       strs << tg/t*100;
+       string str = strs.str();
+       ofstream out;
+       out.open("res.txt", ios::app);
+       out << strFileName << " " << str << "\n";
     //vector<cv::Point> contactBorder = breastDat.getContact();
     //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
 //#endif
