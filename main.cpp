@@ -5,7 +5,7 @@
 #include <iterator>
 #include <vector>
 
- /* #define KSENIA_STUFF */
+ #define KSENIA_STUFF
 typedef map< string, phantomCalibration> calibData;
 
 
