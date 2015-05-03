@@ -107,12 +107,6 @@ int main(int argc, char** argv){
     //cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
     //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
     //breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
-
-     string strKVP = various::ToString<OFString>(breastDat.KVP);
-     string bodyThickness = various::ToString<OFString>(breastDat.BodyPartThickness);
-     string Exposure = various::ToString<long>(breastDat.Exposure);
-      double thickness = atoi(bodyThickness.c_str());
-      double exposure = atoi(Exposure.c_str());
     //vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
     //map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
     //breastDat.applyExposureCorrection(breastDistMap);
@@ -120,14 +114,14 @@ int main(int argc, char** argv){
      dcalib.insertFilTar(breastDat);
      dcalib.InserQcTTg(breastDat, "qc.dat");
      phantomCalibration calib;
-     calib.getThicknessData(dcalib.filTar, atoi(strKVP.c_str()));
+     calib.getThicknessData(dcalib.filTar, atoi(breastDat.strKVP.c_str()));
 
       //pair<double,double> coeff3;
-       double t = breastDat.totalBreast(calib, dcalib.filTar, strKVP, exposure);
+       double t = breastDat.totalBreast(dcalib.filTar);
        //breastDat.fatRow(900, strKVP, exposure, dcalib);
        //breastDat.thicknessMap(calib, strKVP, exposure, dcalib);
        //breastDat.thicknessMapRedVal(coeff3, exposure);
-       double tg = breastDat.fibrogland(calib, strKVP, exposure, dcalib);
+       double tg = breastDat.fibrogland(calib,dcalib.filTar);
        //cout << tg/t*100 << endl;
        ostringstream strs;
        strs << tg/t*100;
