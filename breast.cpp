@@ -544,7 +544,7 @@ void breast::getDensityROI(){
     for(int i = 0; i < this->mMammo.cols; i++){
 	for(int j = 0; j < this->mMammo.rows; j++){
 	    int t = this->getPixelType(i,j);
-	    if((t == XIN_BACKGROUND) || (t == XIN_NIPPLE) || (t == XIN_PECTORAL_MUSCLE)){
+	    if((t == XIN_BACKGROUND) /*|| (t == XIN_NIPPLE)*/ || (t == XIN_PECTORAL_MUSCLE)){
 		this->mMammoROISmaller.at<uchar>(j,i) = 0;
 	    }
 	}
