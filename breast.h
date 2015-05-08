@@ -129,7 +129,7 @@ class breast: public mammography, phantomCalibration{
     vector<cv::Point> contactBorder2(const vector<float> plane, vector<cv::Point> contactBorderFin, const double averageDiffVal, const string filTar);
     vector<cv::Point> contactBorderCorrection(vector<cv::Point> contactBorder2Vec);
 
-    double fibrogland(const phantomCalibration calib, const string filTar);
+    double fibrogland(const phantomCalibration calib, const string filTar, double &totalThickness);
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
 };

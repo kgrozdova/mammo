@@ -243,7 +243,7 @@ void breast::getBreastBottom(){
 #endif
     // Need to make "deleteUneeded" work from the polyApprox contour and/or pass it the whole point.
     // Otherwise, this works reasonably well.
-    cv::imwrite(strFileName + "cornerTest.png", mMammoROITest);
+    /* cv::imwrite(strFileName + "cornerTest.png", mMammoROITest); */
     this->mMammoROISmaller = mMammoROITest.clone();
 }
 
@@ -544,12 +544,12 @@ void breast::getDensityROI(){
     for(int i = 0; i < this->mMammo.cols; i++){
 	for(int j = 0; j < this->mMammo.rows; j++){
 	    int t = this->getPixelType(i,j);
-	    if((t == XIN_BACKGROUND) /*|| (t == XIN_NIPPLE)*/ || (t == XIN_PECTORAL_MUSCLE)){
+	    if((t == XIN_BACKGROUND) || (t == XIN_NIPPLE) || (t == XIN_PECTORAL_MUSCLE)){
 		this->mMammoROISmaller.at<uchar>(j,i) = 0;
 	    }
 	}
     }
-    cv::imwrite(this->strFileName+"FinalROI.png",this->mMammoROISmaller);
+    /* cv::imwrite(this->strFileName+"FinalROI.png",this->mMammoROISmaller); */
 }
 void breast::drawImages(string fileName, const cv::Mat mCornerTresh, const cv::Mat mMammoThreshedCopy, const int histSize){
     /* fileName.pop_back(); */
@@ -587,7 +587,7 @@ double breast::totalBreast(const string filTar){
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
             if(isBreast(j,i)){
-                breastThick += breast::glandpercentInverse(double(this->getHeight(j,i)), filTar, this->strKVP, this->numExposure);
+                breastThick += breast::glandpercentInverse(double(this->getHeight(i,j)), filTar, this->strKVP, this->numExposure);
             }
         }
     }
@@ -660,7 +660,7 @@ void breast::thicknessMapRedVal(const pair<double,double> coeff3, const int expo
             }
         }
     }
-    cv::imwrite("test_thickMapRed.png",dst);
+    /* cv::imwrite("test_thickMapRed.png",dst); */
 }
 
 Uint16 breast::getHeight(int x, int y){
@@ -691,7 +691,7 @@ void breast::makeXinROIMap(){
     /* HeightMap = HeightMap*256/maxVal; */
 
     /* HRROIMap = mChenFatClass*(256/5); // Convert between our 14 bit mammograms and 256 */
-    cv::imwrite(strFileName+"FatLogTransform.png",HeightMap);
+    /* cv::imwrite(strFileName+"FatLogTransform.png",HeightMap); */
 
     // FILLING IN HOLES IN FAT MAP
     // Morphological opening: remove noise, fill in small holes
@@ -808,7 +808,7 @@ void breast::makeXinROIMap(){
     cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
     cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
     cv::medianBlur(HeightMapFilled,HeightMapFilled,25);
-    cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled);
+    /* cv::imwrite(strFileName+"FatLogFilled.png",HeightMapFilled); */
     this->mHeightMap = HeightMapFilled.clone();
 
     /* Undoing all the transformations */
@@ -890,7 +890,7 @@ void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const in
         for(int j = 0; j < vecLength; j++){
             dst.at<cv::Vec3b>(contactBorderShapeVal[j]) = color;
         }
-    cv::imwrite("test_thickMapRedBorder.png",dst);
+    /* cv::imwrite("test_thickMapRedBorder.png",dst); */
 }
 
 vector<pair<int,int>> breast::pixelOfInterestExposure(){
@@ -1066,7 +1066,7 @@ void breast::exposureMap(const pair<double,double> coeff3, const int exposure, c
         for(int j = 0; j < vecLength; j++){
             dst.at<cv::Vec3b>(cv::Point(pixelOfInterestExposureVec[j].second,pixelOfInterestExposureVec[j].first)) = color;
         }
-    cv::imwrite("test_exposureMap.png",dst);
+    /* cv::imwrite("test_exposureMap.png",dst); */
 }
 
 string breast::heightRowArray(vector<cv::Point> contactBorder2Vec, const string xOrY){
@@ -1359,16 +1359,19 @@ double breast::breastThickAtPixel(const phantomCalibration calib, const int i, c
     return (log(double(this->mMammo.at<Uint16>(j,i))/this->numExposure)-coeff3.second)/coeff3.first;
 }
 
-double breast::fibrogland(const phantomCalibration calib, const string filTar){
+double breast::fibrogland(const phantomCalibration calib, const string filTar, double &totalThickness){
       double tg(0);
       double tgTemp;
       double breastThickness;
         //ofstream myfile;
        //myfile.open ("example2.txt");
+       /* cout << "DICOM height: " << numThickness << "\tBreast height:" << breast::glandpercentInverse(double(this->getHeight(100,500)), filTar, this->strKVP, this->numExposure); */
+
        for(int i = 0; i < this->mMammo.cols; i++){
            for(int j = 0; j < this->mMammo.rows; j++){
-               if(this->isBreast(j,i)){
-                    breastThickness = breast::glandpercentInverse(double(this->getHeight(j,i)), filTar, this->strKVP, this->numExposure);
+               if(this->isBreast(i,j)){
+                    breastThickness = breast::glandpercentInverse(double(this->getHeight(i,j)), filTar, this->strKVP, this->numExposure);
+		    if(breastThickness < this->numThickness*1.5){ // If the pixel is realistically thick
 
                    if(int(this->mMammo.at<Uint16>(j,i)) == 0){
                        tgTemp = breastThickness;
@@ -1381,7 +1384,11 @@ double breast::fibrogland(const phantomCalibration calib, const string filTar){
                        tg += breastThickness;
                    } else{
                        tg += 0;
+		       /* totalThickness -= breastThickness;   // If glandular density is negative, remove pixel from consideration. */
                    }
+		    } else {
+		       totalThickness -= breastThickness;   // If glandular density is negative, remove pixel from consideration.
+		    }
                   // myfile << breastThickness<< " " << tgTemp << "\n";
                }
            }

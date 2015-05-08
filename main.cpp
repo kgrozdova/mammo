@@ -121,7 +121,9 @@ int main(int argc, char** argv){
        //breastDat.fatRow(900, strKVP, exposure, dcalib);
        //breastDat.thicknessMap(calib, strKVP, exposure, dcalib);
        //breastDat.thicknessMapRedVal(coeff3, exposure);
-       double tg = breastDat.fibrogland(calib,dcalib.filTar);
+       /* cout << "T before: " << t << endl; */
+       double tg = breastDat.fibrogland(calib,dcalib.filTar, t);
+       /* cout << "T after: " << t << endl; */
        //cout << tg/t*100 << endl;
        ostringstream strs;
        strs << tg/t*100;
