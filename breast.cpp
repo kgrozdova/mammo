@@ -544,7 +544,7 @@ void breast::getDensityROI(){
     for(int i = 0; i < this->mMammo.cols; i++){
 	for(int j = 0; j < this->mMammo.rows; j++){
 	    int t = this->getPixelType(i,j);
-	    if((t == XIN_BACKGROUND) || (t == XIN_NIPPLE) || (t == XIN_PECTORAL_MUSCLE)){
+	    if((t == XIN_BACKGROUND) /*|| (t == XIN_NIPPLE) */|| (t == XIN_PECTORAL_MUSCLE)){
 		this->mMammoROISmaller.at<uchar>(j,i) = 0;
 	    }
 	}
@@ -586,8 +586,15 @@ double breast::totalBreast(const string filTar){
     double breastThick(0);
     for(int i = 0; i < mMammo.cols; i++){
         for(int j = 0; j < mMammo.rows; j++){
-            if(isBreast(j,i)){
-                breastThick += breast::glandpercentInverse(double(this->getHeight(i,j)), filTar, this->strKVP, this->numExposure);
+            if(isBreast(i,j)){
+		double pixThick = breast::glandpercentInverse(double(this->getHeight(i,j)), filTar, this->strKVP, this->numExposure);
+		breastThick += pixThick;
+
+#ifdef OAB_DEBUG
+		if(pixThick > numThickness){
+		    this->mMammo8BitNorm.at<uchar>(j,i) = uchar(255);
+		}
+#endif
             }
         }
     }
