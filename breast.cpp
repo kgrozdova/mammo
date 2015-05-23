@@ -602,26 +602,22 @@ double breast::totalBreast(const string filTar){
 }
 
 pair<double,double> breast::glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t){
-    map<string, double> b_a = {{"MoMo", -0.053}, {"MoRh26", -0.041}, {"MoRh27", -0.0466}, {"MoRh28", -0.053}, {"MoRh29", -0.046}, {"RhRh29", -0.047}, {"RhRh30", -0.042}, {"RhRh31", -0.041}};
-    map<string, double> b_b = {{"MoMo", 4.402}, {"MoRh26", 4.321}, {"MoRh27", 4.827}, {"MoRh28", 5.173}, {"MoRh29", 5.123}, {"RhRh29", 5.39}, {"RhRh30", 5.313}, {"RhRh31", 5.444}};
     div_t divresult;
     divresult = div(t,10);
     pair<int,int> thick = {divresult.quot*10,divresult.quot*10+10};
     double a = (calib.calibSet.find(thick.first)->second.first+calib.calibSet.find(thick.second)->second.first)/2;
     string lookFor = filTar+kV;
-    double a_calc = b_a.find(lookFor)->second;
-    double b_calc = b_b.find(lookFor)->second;
+    double a_calc = this->b_a.find(lookFor)->second;
+    double b_calc = this->b_b.find(lookFor)->second;
     double b = a_calc*t+b_calc;
     pair<double,double> ret = {a,b};
     return ret;
 }
 
 double breast::glandpercentInverse(const double MPV, const string filTar, const string kV, const double exposure){
-    map<string, double> b_a = {{"MoMo", -0.053}, {"MoRh26", -0.041}, {"MoRh27", -0.0466}, {"MoRh28", -0.053}, {"MoRh29", -0.046}, {"RhRh29", -0.047}, {"RhRh30", -0.042}, {"RhRh31", -0.041}};
-    map<string, double> b_b = {{"MoMo", 4.402}, {"MoRh26", 4.321}, {"MoRh27", 4.827}, {"MoRh28", 5.173}, {"MoRh29", 5.123}, {"RhRh29", 5.39}, {"RhRh30", 5.313}, {"RhRh31", 5.444}};
     string lookFor = filTar+kV;
-    double a_calc = b_a.find(lookFor)->second;
-    double b_calc = b_b.find(lookFor)->second;
+    double a_calc = this->b_a.find(lookFor)->second;
+    double b_calc = this->b_b.find(lookFor)->second;
     double t = (log(MPV/exposure)-b_calc)/a_calc;
     if(t < 0)
         t = 0;
@@ -1402,4 +1398,20 @@ double breast::fibrogland(const phantomCalibration calib, const string filTar, d
        }
        //myfile.close();
        return tg;
+}
+
+void breast::dailyCorrectionTVsB(const string filTar, const string kV, phantomCalibration calib){
+    int lengthCalibSet = calib.calibSet.size();
+    double x[lengthCalibSet];
+    double y[lengthCalibSet];
+    int var(0);
+    for(map<int, pair<double, double>>::iterator it=calib.calibSet.begin(); it!=calib.calibSet.end(); ++it){
+        x[var] = it->first;
+        y[var] = it->second.second;
+        var++;
+    }
+    pair<double,double> tVsBCoeff = scanner::linearfit(x, y, lengthCalibSet);
+    string lookFor = filTar+kV;
+    this->b_a.find(lookFor)->second = tVsBCoeff.first;
+    this->b_b.find(lookFor)->second = tVsBCoeff.second;
 }

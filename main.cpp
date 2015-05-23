@@ -115,6 +115,8 @@ int main(int argc, char** argv){
      dcalib.InserQcTTg(breastDat, "qc.dat");
      phantomCalibration calib;
      calib.getThicknessData(dcalib.filTar, atoi(breastDat.strKVP.c_str()));
+     calib.calibSet = calib.dataCorrection(dcalib.tg,dcalib.qc_ln_MPV_mAs);
+     breastDat.dailyCorrectionTVsB(dcalib.filTar, breastDat.strKVP, calib);
 
       //pair<double,double> coeff3;
        double t = breastDat.totalBreast(dcalib.filTar);
@@ -122,7 +124,7 @@ int main(int argc, char** argv){
        //breastDat.thicknessMap(calib, strKVP, exposure, dcalib);
        //breastDat.thicknessMapRedVal(coeff3, exposure);
        double tg = breastDat.fibrogland(calib,dcalib.filTar, t);
-       //cout << tg/t*100 << endl;
+       cout << tg/t*100 << endl;
        ostringstream strs;
        strs << tg/t*100;
        string str = strs.str();

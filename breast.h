@@ -88,7 +88,7 @@ class breast: public mammography, phantomCalibration{
         static double fibrogland(const cv::Mat imDat, const int thickness, const int exposure, calibData calibration);
         double totalBreast(const string filTar);
         pair<double,double> glandpercent(const phantomCalibration calib, const string filTar, const string kV, const double t);
-        static double glandpercentInverse(const double MPV, const string filTar, const string kV, const double exposure);
+        double glandpercentInverse(const double MPV, const string filTar, const string kV, const double exposure);
         double breastThickAtPixel(const phantomCalibration calib, const int i, const int j, const string filTar, const double t);
         void thicknessMapRedVal(const pair<double,double> coeff3, const int exposure);
 
@@ -130,6 +130,8 @@ class breast: public mammography, phantomCalibration{
     vector<cv::Point> contactBorderCorrection(vector<cv::Point> contactBorder2Vec);
 
     double fibrogland(const phantomCalibration calib, const string filTar, double &totalThickness);
+
+    void dailyCorrectionTVsB(const string filTar, const string kV, phantomCalibration calib);
 	// DEPRECATED STUFF?
         static std::vector<float> normalBreastThickness(std::vector<float> vecDistBrightBrightestm, const cv::Mat distImage);
 };
