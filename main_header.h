@@ -34,3 +34,10 @@ template <typename T> string various::ToString(T input){
     return output;
 }
 
+template <typename T> double various::ToDouble(T input){
+    double output;
+    istringstream i(input);
+    i >> output;
+    return output;
+}
+

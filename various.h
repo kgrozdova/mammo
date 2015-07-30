@@ -17,11 +17,11 @@ typedef float REAL;
 const REAL BF_PI = 3.1415926535897932384626433832795028841971693993751f;
 const REAL BF_DEG_TO_RAD = ((2.0f * BF_PI) / 360.0f);
 const REAL BF_RAD_TO_DEG = (360.0f / (2.0f * BF_PI));
-std::string intToString(int input);
 
 class various{
     public:
         template <typename T> static std::string ToString(T input);
+        template <typename T> static double ToDouble(T input);
         static void iterateVectorToFile(std::vector<std::pair<double, double>> vectorInput, std::string fileName);
         static std::string fileNameErase(std::string fileName);
 

@@ -18,13 +18,6 @@ string various::fileNameErase(string fileName){
     return fileName.erase(fileName.length()-OL_EXT_LENGTH, fileName.length()); // Remove file extension.
 }
 
-std::string intToString(int input){
-    std::stringstream ss;
-    ss << input;
-    std::string output = ss.str();
-    return output;
-}
-
 void various::bf_getTranslation(const REAL *matrix,REAL *t)
 {
   t[0] = matrix[3*4+0];
