@@ -40,5 +40,3 @@ void dailyCalibration::InserQcTTg(mammography mammData, const string fileName){
         l >> tg;
     }
 }
-
-

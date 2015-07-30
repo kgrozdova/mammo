@@ -167,6 +167,7 @@ map<int, pair<double, double>> phantomCalibration::dataCorrection(const double x
             x = (y0 - it.second.second)/it.second.first;
             copyPair = {it.second.first, it.second.second+((x+shift)*it.second.second)/x-it.second.second};
             calibCopy[it.first] = copyPair;
+            //cout << it.first << " " << copyPair.first << " " << copyPair.second << endl;
     }
     return calibCopy;
 }

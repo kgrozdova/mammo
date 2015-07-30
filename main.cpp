@@ -104,34 +104,41 @@ int main(int argc, char** argv){
     //
     // DRAWING THE PICTURES
 #ifdef KSENIA_STUFF
-    //cout << "Is fat? " << (breastDat.getPixelType(400,1900) == XIN_FAT) << endl << endl;
-    //cout << "Thickness: " << breastDat.getHeight(100,100) << endl << endl;
-    //breastDat.drawImages(strFileName, mCornerThresh, mMammoThreshedCopy, histSize);
-    //vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
-    //map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
-    //breastDat.applyExposureCorrection(breastDistMap);
+    /* CORRECTION FOR OVEREXPOSURE */
+    /* vector<pair<int,int>> pixelOfInterestExposureVec = breastDat.pixelOfInterestExposure();
+    map<int,vector<pair<double,pair<int,int>>>> breastDistMap = breastDat.distMap(pixelOfInterestExposureVec);
+    breastDat.applyExposureCorrection(breastDistMap); */
+
+     /* IMPORT DAILY CALIBRATION DATA */
      dailyCalibration dcalib;
      dcalib.insertFilTar(breastDat);
      dcalib.InserQcTTg(breastDat, "qc.dat");
+
+     /* LOAD CALIBRATION DATA */
      phantomCalibration calib;
      calib.getThicknessData(dcalib.filTar, atoi(breastDat.strKVP.c_str()));
-     calib.calibSet = calib.dataCorrection(dcalib.tg,dcalib.qc_ln_MPV_mAs);
-     breastDat.dailyCorrectionTVsB(dcalib.filTar, breastDat.strKVP, calib);
 
-      //pair<double,double> coeff3;
-       double t = breastDat.totalBreast(dcalib.filTar);
-       //breastDat.fatRow(900, strKVP, exposure, dcalib);
-       //breastDat.thicknessMap(calib, strKVP, exposure, dcalib);
-       //breastDat.thicknessMapRedVal(coeff3, exposure);
-       double tg = breastDat.fibrogland(calib,dcalib.filTar, t);
-       cout << tg/t*100 << endl;
-       ostringstream strs;
-       strs << tg/t*100;
-       string str = strs.str();
-       ofstream out;
-       out.open("res.txt", ios::app);
-       out << strFileName << " " << str << "\n";
-    //vector<cv::Point> contactBorder = breastDat.getContact();
-    //breastDat.thicknessMapRedValBorder(coeff3, exposure, contactBorder);
+    /* APPLY DAILY CALIBRATION CORRECTION */
+    /* calib.calibSet = calib.dataCorrection(dcalib.tg,dcalib.qc_ln_MPV_mAs); */
+
+    /* CALCULATE TOTAL BREAST THICKNESS AND TOTAL FIBROGLANDULAR TISSUE THICKNESS*/
+    double t = breastDat.totalBreast(dcalib.filTar);
+    double tg = breastDat.fibrogland(calib,dcalib.filTar, t);
+
+    /* OUTPUT 2D BREAST THICKNESS MAP */
+    /* breastDat.thicknessMap(calib, strKVP, exposure, dcalib); */
+
+    /* FIND THE BORDER, WHERE A BREAST LOSES CONTACT WITH COMPRESSION PADDLE */
+    /* vector<cv::Point> contactBorder = breastDat.getContact(); */
+
+    /* OUTPUT RESULT TO res.txt */
+    ostringstream strs;
+    strs << tg/t*100;
+    string str = strs.str();
+    ofstream out;
+    out.open("res.txt", ios::app);
+    out << strFileName << " " << str << "\n";
+    cout << str << endl;
+
 #endif
 }
