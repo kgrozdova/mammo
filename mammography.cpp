@@ -6,7 +6,6 @@ void mammography::loadHeaderData(const std::string fileName){
      OFCondition status = fileformat.loadFile(fName);
      if(status.good()){
         if (fileformat.getDataset()->findAndGetLongInt(DCM_XRayTubeCurrent, XRayTubeCurrent).good()){
-            // log
         }else
             std::cerr << "Error: cannot access XRayTubeCurrent!" << std::endl;
         if (fileformat.getDataset()->findAndGetOFString(DCM_KVP, KVP).good()){
