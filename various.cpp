@@ -18,6 +18,33 @@ string various::fileNameErase(string fileName){
     return fileName.erase(fileName.length()-OL_EXT_LENGTH, fileName.length()); // Remove file extension.
 }
 
+map<int, vector<pair<double,double>>> various::getThicknessDataFound(map<int, vector<pair<double,double>>> rawData, const int i, const string filTar, const int kV){
+    ifstream ifs;
+    string fileName;
+    string str, gland, ln_MPV_mAs;
+    size_t found,found2, found3, found4;
+    int counter(0);
+    string kVStr = various::ToString<int>(kV);
+    fileName = "av_calib_data" + filTar + kVStr + "_" + to_string(i) + ".csv";
+    ifs.open(fileName, ifstream::in);
+    while(ifs.good()){
+        getline(ifs, str);
+        counter++;
+        if( ifs.eof() ) break;
+        if(counter != 1){
+            found = str.find(",");
+            found2 = str.find(",",found+1);
+            found3 = str.find(",",found2+1);
+            found4 = str.find(",",found3+1);
+            gland = str.substr(found2+1, found3-found2-1);
+            ln_MPV_mAs = str.substr(found3+1, found4-found3-1);
+            rawData[i].push_back(make_pair(atof(gland.c_str()), atof(ln_MPV_mAs.c_str())));
+        }
+    }
+    ifs.close();
+    return rawData;
+}
+
 void various::bf_getTranslation(const REAL *matrix,REAL *t)
 {
   t[0] = matrix[3*4+0];

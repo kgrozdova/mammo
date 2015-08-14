@@ -20,11 +20,9 @@ class phantomCalibration{
         phantomCalibration(){
         };
         ~phantomCalibration() {}
-        // input the fibroglandular tissue thickness value into dataArr
-        void inputData(map<int, vector<pair<double,double>>> rawData, const int i, const double tg, const double ln_MPV_mAs);
-        // get the phantomCalibration class object with dataArr containing the data for given total thickness
+        // GET THE phantomCalibration CLASS OBJECT WITH dataArr CONTAINING THE DATA FOR GIVEN TOTAL THICKNESS
         void getThicknessData(const string filTar, const int kV);
-        void applyShift(const double shift);
+        // CALIBRATION DATA CORRECTION ACCORDING TO THE QC DATA
         map<int, pair<double, double>> dataCorrection(const double x0, const double y0);
 };
 

@@ -1265,13 +1265,13 @@ vector<cv::Point> breast::pointsFatForPlane(vector<cv::Point> contactBorderFin, 
 }
 
 vector<cv::Point> breast::getContact(const string strKVP, const double exposure, const dailyCalibration dcalib){
-    vector<cv::Point> contactBorderPoints =  this->contactBorder(dcalib.filTar);
+    vector<cv::Point> contactBorderPoints =  this->contactBorder(dcalib.filTarQC);
     vector<cv::Point> breastBorderPoints  = this->breastBorder();
     double averageDiffVal = this->averageDiffBorder(contactBorderPoints, breastBorderPoints);
     vector<cv::Point> contactBorderFin = this->contactBorderFinal(contactBorderPoints, averageDiffVal);
     vector<cv::Point> breastFatDiscarded = this->pointsFatForPlane(contactBorderFin, averageDiffVal);
-    vector<float> m = this->fitPlane(breastFatDiscarded, dcalib.filTar);
-    vector<cv::Point> contactBorder2Vec = this->contactBorder2(m, contactBorderFin, averageDiffVal, dcalib.filTar);
+    vector<float> m = this->fitPlane(breastFatDiscarded, dcalib.filTarQC);
+    vector<cv::Point> contactBorder2Vec = this->contactBorder2(m, contactBorderFin, averageDiffVal, dcalib.filTarQC);
     return contactBorderFin;
 }
 

@@ -116,14 +116,14 @@ int main(int argc, char** argv){
 
      /* LOAD CALIBRATION DATA */
      phantomCalibration calib;
-     calib.getThicknessData(dcalib.filTar, atoi(breastDat.strKVP.c_str()));
+     calib.getThicknessData(dcalib.filTarQC, atoi(breastDat.strKVP.c_str()));
 
     /* APPLY DAILY CALIBRATION CORRECTION */
     /* calib.calibSet = calib.dataCorrection(dcalib.tg,dcalib.qc_ln_MPV_mAs); */
 
     /* CALCULATE TOTAL BREAST THICKNESS AND TOTAL FIBROGLANDULAR TISSUE THICKNESS*/
-    double t = breastDat.totalBreast(dcalib.filTar);
-    double tg = breastDat.fibrogland(calib,dcalib.filTar, t);
+    double t = breastDat.totalBreast(dcalib.filTarQC);
+    double tg = breastDat.fibrogland(calib,dcalib.filTarQC, t);
 
     /* OUTPUT 2D BREAST THICKNESS MAP */
     /* breastDat.thicknessMap(calib, strKVP, exposure, dcalib); */

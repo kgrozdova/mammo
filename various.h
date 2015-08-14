@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+#include <map>
 
 typedef unsigned int NxU32;
 typedef int NxI32;
@@ -24,6 +25,7 @@ class various{
         template <typename T> static double ToDouble(T input);
         static void iterateVectorToFile(std::vector<std::pair<double, double>> vectorInput, std::string fileName);
         static std::string fileNameErase(std::string fileName);
+        static std::map<int, std::vector<std::pair<double,double>>> getThicknessDataFound(std::map<int, std::vector<std::pair<double,double>>> rawData, const int i, const std::string filTar, const int kV);
 
         static void bf_getTranslation(const REAL *matrix,REAL *t);
         static void bf_matrixToQuat(const REAL *matrix,REAL *quat);

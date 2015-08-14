@@ -6,11 +6,11 @@ void dailyCalibration::insertFilTar(mammography mammData){
     string filter = various::ToString<OFString>(mammData.Filter);
     string target = various::ToString<OFString>(mammData.Target);
     if(filter == "RHODIUM" && target == "RHODIUM"){
-        this->filTar = "RhRh";
+        this->filTarQC = "RhRh";
     } else if(filter == "MOLYBDENUM" && target == "MOLYBDENUM"){
-        this->filTar = "MoMo";
+        this->filTarQC = "MoMo";
     } else if(filter == "MOLYBDENUM" && target == "RHODIUM"){
-        this->filTar = "MoRh";
+        this->filTarQC = "MoRh";
     } else{
         cerr << "Error in filter/target combination";
     }
