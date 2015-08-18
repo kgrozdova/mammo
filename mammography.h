@@ -28,7 +28,9 @@ class mammography: public various{
             numExposure = atoi(strExposure.c_str());
         };
         ~mammography() {}
+        //LOAD DICOM HEADER DATA
         void loadHeaderData(const std::string fileName);
+        //LOAD DICOM PIXEL DATA
         void loadPixelData(const std::string fileName);
 };
 

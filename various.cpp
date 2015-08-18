@@ -45,6 +45,20 @@ map<int, vector<pair<double,double>>> various::getThicknessDataFound(map<int, ve
     return rawData;
 }
 
+void various::redMap(cv::Mat tg, const vector<pair<int,int>> inputVec){
+    cv::Mat dst;
+    cvtColor(tg,dst,CV_GRAY2RGB);
+    cv::Vec3b color;
+    color.val[0] = 0;
+    color.val[1] = 0;
+    color.val[2] = 255;
+    int vecLength  = inputVec.size();
+        for(int j = 0; j < vecLength; j++){
+            dst.at<cv::Vec3b>(cv::Point(inputVec[j].second,inputVec[j].first)) = color;
+        }
+    cv::imwrite("test_exposureMap.png",dst);
+}
+
 void various::bf_getTranslation(const REAL *matrix,REAL *t)
 {
   t[0] = matrix[3*4+0];

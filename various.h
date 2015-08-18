@@ -1,5 +1,10 @@
 #pragma once
 
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/imgproc/imgproc.hpp"
+
 #include <string>
 #include <sstream>
 #include <utility>
@@ -23,9 +28,14 @@ class various{
     public:
         template <typename T> static std::string ToString(T input);
         template <typename T> static double ToDouble(T input);
+        /* OUTPUTS VECTOR CONTENTS TO A FILE */
         static void iterateVectorToFile(std::vector<std::pair<double, double>> vectorInput, std::string fileName);
         static std::string fileNameErase(std::string fileName);
-        static std::map<int, std::vector<std::pair<double,double>>> getThicknessDataFound(std::map<int, std::vector<std::pair<double,double>>> rawData, const int i, const std::string filTar, const int kV);
+        /* LOAD CALIBRATION DATA */
+        static std::map<int, std::vector<std::pair<double,double>>> getThicknessDataFound(std::map<int, std::vector<std::pair<double,double>>> rawData,
+                                                                                             const int i, const std::string filTar, const int kV);
+        /* MARK THE PIXELS OF INTEREST OF THE THICKNESS MAP */
+        static void redMap(cv::Mat tg, const std::vector<std::pair<int,int>> inputVec);
 
         static void bf_getTranslation(const REAL *matrix,REAL *t);
         static void bf_matrixToQuat(const REAL *matrix,REAL *quat);

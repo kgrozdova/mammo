@@ -859,45 +859,9 @@ bool breast::isBreast(int x, int y){
     return (mMammoROISmaller.at<uchar>(y,x) > 0);
 }
 
-void breast::thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<cv::Point> contactBorderShapeVal){
-    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
-    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
-    int thickness = atoi(bodyThickness.c_str());
-    double tgTemp;
-    /* double maxPixValCurve = exp(coeff3.second)*exposure; */
-    for(int i = 0; i < mMammo.cols; i++){
-        for(int j = 0; j < mMammo.rows; j++){
-            if(mMammoROI.at<Uint8>(j,i) != 0){
-                    if(int(mMammo.at<Uint16>(j,i)) == 0){
-                        tgTemp = thickness;
-                    } else{
-                        tgTemp = (log(double(mMammo.at<Uint16>(j,i))/exposure)-coeff3.second)/coeff3.first;
-                    }
-                    if(tgTemp >= 0 && tgTemp <= thickness){
-                        tg.at<Uint8>(j,i) = tgTemp*double(255/thickness);
-                    } else if(tgTemp > thickness){
-                        tg.at<Uint8>(j,i) = thickness*double(255/thickness);
-                    } else{
-                        tg.at<Uint8>(j,i) = 0;
-                    }
-        }
-    }
-    }
-    int vecLength = contactBorderShapeVal.size();
-    cv::Mat dst;
-    cvtColor(tg,dst,CV_GRAY2RGB);
-    cv::Vec3b color;
-    color.val[0] = 0;
-    color.val[1] = 0;
-    color.val[2] = 255;
-        for(int j = 0; j < vecLength; j++){
-            dst.at<cv::Vec3b>(contactBorderShapeVal[j]) = color;
-        }
-    /* cv::imwrite("test_thickMapRedBorder.png",dst); */
-}
-
 vector<pair<int,int>> breast::pixelOfInterestExposure(){
     vector<pair<int,int>> pixelOfInterestExposureVec;
+    /* CHOOSE OVEREXPOSED PIXELS FROM THE HISTOGRAM */
     pair<float, float> rightPeak = this->findHistPeakRight();
     pair<float, float> leftPeak = this->findHistPeakLeft();
     float minVal = leftPeak.first;
@@ -912,6 +876,7 @@ vector<pair<int,int>> breast::pixelOfInterestExposure(){
             break;
         }
     }
+
     int MPVRangeUpperLimit = (this->LargestImagePixelValue/512)*(rightLim);
     int MPVRangeLowerLimit = (this->LargestImagePixelValue/512)*(leftPeak.second*3.5);
     for(int i = 0; i < this->mMammo.cols; i++){
@@ -920,12 +885,6 @@ vector<pair<int,int>> breast::pixelOfInterestExposure(){
                 pixelOfInterestExposureVec.push_back(make_pair(j,i));
          }
     }
-    //this->drawHist();
-    ofstream myfile;
-    myfile.open ("pointsChosen.txt");
-    for(vector<pair<int,int>>::iterator it = pixelOfInterestExposureVec.begin(); it != pixelOfInterestExposureVec.end(); it++)
-        myfile << it->first << " " << it->second << " " << this->mMammo.at<Uint16>(it->first,it->second) << "\n";
-    myfile.close();
     return pixelOfInterestExposureVec;
 }
 
@@ -964,43 +923,11 @@ map<int,vector<pair<double,pair<int,int>>>> breast::distMap(vector<pair<int,int>
             it->second[i].first = MPVsum/countPix;
         }
     }
-//    vector<pair<double,pair<int,int>>> breastDistMapVec2;
-//    for(int i = 0; i < this->mMammoDist.cols; i++){
-//        for(int j = 0; j < this->mMammoDist.rows; j++){
-//            distVal = float(this->mMammoDist.at<uchar>(j,i));
-//            if(distVal == breastDistMap.rbegin()->first+1 && distVal != 256)
-//                breastDistMapVec2.push_back(make_pair(0,make_pair(j,i)));
-//        }
-//    }
-//    distVal = breastDistMap.rbegin()->first+1;
-//    vecLength = breastDistMapVec2.size();
-//    for(int i = 0; i < vecLength; i++){
-//        MPVsum = 0; countPix = 0;
-//            difference = i-1000;
-//            if(difference < 0){
-//                leftBorder = 0;
-//            } else{
-//                leftBorder = i - 1000;
-//            }
-//            difference = i+1000;
-//            if(difference > vecLength){
-//                rightBorder = vecLength;
-//            } else{
-//                rightBorder = i + 1000;
-//            }
-//        for(int j = leftBorder; j < rightBorder; j++){
-//            MPVsum += this->mMammo.at<Uint16>(breastDistMapVec2[i].second.first,breastDistMapVec2[i].second.second);
-//            countPix++;
-//        }
-//        breastDistMapVec2[i].first = MPVsum/countPix;
-//    }
-//    breastDistMap[distVal] = breastDistMapVec2;
     return breastDistMap;
 }
 
 void breast::applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>> breastDistMap){
-    /* double distAvNext; */
-    int /*distVal,*/ vecLength1, vecLength2, pixVal;
+    int vecLength1, vecLength2, pixVal;
     map<int,vector<pair<double,pair<int,int>>>>::iterator it;
     vector<pair<pair<int,int>,double>> correctedMPVs;
     it = breastDistMap.begin();
@@ -1009,36 +936,28 @@ void breast::applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>>
     int maxKey = it->first;
     for(int i = (maxKey-1); i >= minKey; i--){
         if(i != 255){
-        vecLength1 = breastDistMap[i].size();
-        vecLength2 = breastDistMap[i+1].size();
-        for(int j =  0; j < vecLength1; j++){
-            if(vecLength2 != 0){
-                pixVal = this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second);
-                if(j < vecLength2){
-                    if(breastDistMap[i+1][j].first != 0)
-                        this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second) =  pixVal*(breastDistMap[i+1][j].first/breastDistMap[i][j].first);
-                } else{
+            vecLength1 = breastDistMap[i].size();
+            vecLength2 = breastDistMap[i+1].size();
+            for(int j =  0; j < vecLength1; j++){
+                if(vecLength2 != 0){
+                    pixVal = this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second);
+                    if(j < vecLength2){
+                        if(breastDistMap[i+1][j].first != 0)
+                            this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second) =
+                            pixVal*(breastDistMap[i+1][j].first/breastDistMap[i][j].first);
+                        } else{
                     if(breastDistMap[i+1][vecLength2].first != 0)
-                        this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second) =  pixVal*(breastDistMap[i+1][vecLength2].first/breastDistMap[i][vecLength2].first);
+                        this->mMammo.at<Uint16>(breastDistMap[i][j].second.first, breastDistMap[i][j].second.second) =
+                        pixVal*(breastDistMap[i+1][vecLength2].first/breastDistMap[i][vecLength2].first);
+                    }
                 }
             }
         }
-        }
     }
-    ofstream myfile;
-    myfile.open ("pointsChosen2.txt");
-    for(map<int,vector<pair<double,pair<int,int>>>>::iterator it = breastDistMap.begin(); it != breastDistMap.end(); it++){
-        for(vector<pair<double,pair<int,int>>>::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++){
-            myfile << it2->second.first << " " << it2->second.second << " " << this->mMammo.at<Uint16>(it2->second.first,it2->second.second) << "\n";
-        }
-    }
-    myfile.close();
 }
 
-
-void breast::exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec){
+cv::Mat breast::thicknessMap(const string bodyThickness, const pair<double,double> coeff3, const int exposure){
     cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
-    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
     int thickness = atoi(bodyThickness.c_str());
     double tgTemp;
     for(int i = 0; i < mMammo.cols; i++){
@@ -1059,41 +978,14 @@ void breast::exposureMap(const pair<double,double> coeff3, const int exposure, c
         }
     }
     }
-    cv::Mat dst;
-    cvtColor(tg,dst,CV_GRAY2RGB);
-    cv::Vec3b color;
-    color.val[0] = 0;
-    color.val[1] = 0;
-    color.val[2] = 255;
-    int vecLength  = pixelOfInterestExposureVec.size();
-        for(int j = 0; j < vecLength; j++){
-            dst.at<cv::Vec3b>(cv::Point(pixelOfInterestExposureVec[j].second,pixelOfInterestExposureVec[j].first)) = color;
-        }
-    /* cv::imwrite("test_exposureMap.png",dst); */
+    return tg;
 }
 
-string breast::heightRowArray(vector<cv::Point> contactBorder2Vec, const string xOrY){
-    string RowArray = "[";
-    int counter(0);
-    for(vector<cv::Point>::iterator it = contactBorder2Vec.begin(); it != contactBorder2Vec.end(); it++){
-        if(this->mHeightMap16.at<Uint16>(it->y,it->x) != 0){
-            if(xOrY == "x"){
-                RowArray.append(to_string(it->x));
-            } else{
-                RowArray.append(to_string(double(this->mHeightMap16.at<Uint16>(it->y,it->x))));
-            }
-            RowArray.append(",");
-            counter++;
-        }
-    }
-    RowArray = RowArray.substr(0, RowArray.size()-1);
-    if(RowArray != "")
-        RowArray.append("]");
-    if(counter >= 3){
-        return RowArray;
-    } else{
-        return "";
-    }
+void breast::exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec){
+    cv::Mat tg = cv::Mat(mMammo.rows, mMammo.cols, CV_8UC1, cvScalar(0));
+    string bodyThickness = various::ToString<OFString>(this->BodyPartThickness);
+    tg = this->thicknessMap(bodyThickness, coeff3, exposure);
+    various::redMap(tg, pixelOfInterestExposureVec);
 }
 
 pair<cv::Point,float> breast::straightLevel(const int row){
@@ -1141,31 +1033,19 @@ vector<cv::Point> breast::contactBorder(const string filTar){
     vector<cv::Point> contactBorderPoints;
     float straightLevelConst;
     double deltaY;
-    //double coeff[4];
-    //alglib::real_1d_array x;
-    //alglib::real_1d_array y;
-    //alglib::spline1dinterpolant s;
-    //string RowArrayX, RowArrayY;
     int counter(0);
     for(int i = 0; i < this->mHeightMap16.rows; i++){
-        //RowArrayX = this->heightRowArray(i, "x");
-        //RowArrayY = this->heightRowArray(i, "y");
-        //if(RowArrayX != "" && RowArrayX != ""){
-            //x =  alglib::real_1d_array(RowArrayX.c_str());
-            //y =  alglib::real_1d_array(RowArrayY.c_str());
-            //spline1dbuildcubic(x, y, s);
             straightLevelConst = this->straightLevel(i).second*this->numThickness/255;
                 for(int j = 0; j < this->mHeightMap16.cols; j++){
                     if(this->getPixelType(j,i) == XIN_FAT){
-                    if(float(this->mHeightMap16.at<Uint16>(i,j)) != 0){
-                    counter++;
-                    //deltaY = (straightLevelConst - spline1dcalc(s, j))/10.0;
-                    deltaY = (straightLevelConst - breast::glandpercentInverse(double(this->getHeight(i,j)), filTar, this->strKVP, this->numExposure))/10.0;
-                    if(deltaY > 0.5  && counter > 1){
-                        contactBorderPoints.push_back(cv::Point(j,i));
-                        break;
-                    }
-                    }
+                        if(float(this->mHeightMap16.at<Uint16>(i,j)) != 0){
+                            counter++;
+                            deltaY = (straightLevelConst - breast::glandpercentInverse(double(this->getHeight(i,j)), filTar, this->strKVP, this->numExposure))/10.0;
+                            if(deltaY > 0.5  && counter > 1){
+                                contactBorderPoints.push_back(cv::Point(j,i));
+                                break;
+                            }
+                        }
                     }
                 }
             counter = 0;
@@ -1278,14 +1158,12 @@ vector<cv::Point> breast::getContact(const string strKVP, const double exposure,
 vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded, const string filTar){
     int vecLength = breastFatDiscarded.size();
     vector<float> temp, resultPlane;
-    //ofstream myfile;
-    //myfile.open ("pointsChosen.txt");
     for(int  i = 0; i < vecLength; i++){
         if(float(this->mHeightMap16.at<uchar>(breastFatDiscarded[i].y,breastFatDiscarded[i].x)) != 0){
         temp.push_back(float(breastFatDiscarded[i].x));
         temp.push_back(float(breastFatDiscarded[i].y));
-        temp.push_back( breast::glandpercentInverse(double(this->getHeight(breastFatDiscarded[i].x,breastFatDiscarded[i].y)), filTar, this->strKVP, this->numExposure));
-        //myfile << float(breastFatDiscarded[i].x) << " " << float(breastFatDiscarded[i].y) << " " << float(this->mHeightMap.at<uchar>(breastFatDiscarded[i].y,breastFatDiscarded[i].x))*thickness/255 << "\n";
+        temp.push_back( breast::glandpercentInverse(double(this->getHeight(breastFatDiscarded[i].x,breastFatDiscarded[i].y)),
+                                                    filTar, this->strKVP, this->numExposure));
         }
     }
     REAL points[temp.size()];
@@ -1293,7 +1171,6 @@ vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded, const strin
         points[i] = temp[i];
     }
     REAL plane[4];
-    //myfile.close();
     unsigned int PCOUNT = sizeof(points)/(sizeof(REAL)*3);
     bf_computeBestFitPlane(PCOUNT,points,sizeof(REAL)*3,NULL,0,plane);
     if(plane[0] < 0)
@@ -1306,25 +1183,7 @@ vector<float> breast::fitPlane(vector<cv::Point> breastFatDiscarded, const strin
         plane[3] = -plane[3];
     for(int i = 0; i < 4; i++)
         resultPlane.push_back(plane[i]);
-    //printf("Best Fit plane: %0.9f,%0.9f,%0.9f,%0.9f\r\n", plane[0], plane[1], plane[2], plane[3] );
-    //cout << "Plane angle: " << breast::getPlaneAngle(plane) << endl;
-    //cout << breast::getPlaneAngle(resultPlane) << endl;
-    //cout << "Average Distance to plane: " << this->averageDistance(plane,breastFatDiscarded) << endl;
-    //cout << this->averageDistance(plane,breastFatDiscarded) << endl;
     return resultPlane;
-}
-
-void  breast::fatRow(const int row, const string filTar){
-    ofstream myfile;
-    myfile.open ("fatRow.txt");
-    for(int i = 0; i < this->mHeightMap16.cols; i++){
-        if(this->getPixelType(i,row) == XIN_FAT){
-            if(float(this->mHeightMap16.at<Uint16>(row,i)) != 0)
-                if(breast::glandpercentInverse(double(this->getHeight(row,i)), filTar, this->strKVP, this->numExposure) != 0)
-                    myfile << i << " " << breast::glandpercentInverse(double(this->getHeight(row,i)), filTar, this->strKVP, this->numExposure) << "\n";
-        }
-    }
-    myfile.close();
 }
 
 double breast::getPlaneAngle(const vector<float> plane){
@@ -1340,22 +1199,22 @@ double breast::averageDistance(const vector<float> plane, vector<cv::Point> brea
     vector<cv::Point> breastPointsUsed;
     for(int  i = 0; i < vecLength; i++){
         if(float(this->mHeightMap16.at<Uint16>(breastFatDiscarded[i].y,breastFatDiscarded[i].x)) != 0){
-        breastPointsUsed.push_back(cv::Point(breastFatDiscarded[i].x, breastFatDiscarded[i].y));
+            breastPointsUsed.push_back(cv::Point(breastFatDiscarded[i].x, breastFatDiscarded[i].y));
         }
     }
     vecLength = breastPointsUsed.size();
     counter++;
     double thickness;
     for(int i = 0; i < vecLength; i++){
-        thickness = breast::glandpercentInverse(double(this->getHeight(breastPointsUsed[i].x,breastPointsUsed[i].y)), filTar, this->strKVP,this->numExposure);
-       numerator = plane[0]*breastPointsUsed[i].x+plane[1]*breastPointsUsed[i].y+plane[2]*thickness+plane[3];
+        thickness = breast::glandpercentInverse(double(this->getHeight(breastPointsUsed[i].x,breastPointsUsed[i].y)),
+                                                filTar, this->strKVP,this->numExposure);
+        numerator = plane[0]*breastPointsUsed[i].x+plane[1]*breastPointsUsed[i].y+plane[2]*thickness+plane[3];
         denominator = pow(pow(plane[0],2)+pow(plane[1],2)+pow(plane[2],2),0.5);
         avTemp += numerator/denominator;
         counter++;
     }
     return avTemp/double(counter);
 }
-//#endif
 
 double breast::breastThickAtPixel(const phantomCalibration calib, const int i, const int j, const string filTar, const double t){
     pair<double,double> coeff3 = this->glandpercent(calib, filTar, this->strKVP, t);
@@ -1366,10 +1225,6 @@ double breast::fibrogland(const phantomCalibration calib, const string filTar, d
       double tg(0);
       double tgTemp;
       double breastThickness;
-        //ofstream myfile;
-       //myfile.open ("example2.txt");
-       /* cout << "DICOM height: " << numThickness << "\tBreast height:" << breast::glandpercentInverse(double(this->getHeight(100,500)), filTar, this->strKVP, this->numExposure); */
-
        for(int i = 0; i < this->mMammo.cols; i++){
            for(int j = 0; j < this->mMammo.rows; j++){
                if(this->isBreast(i,j)){
@@ -1392,11 +1247,9 @@ double breast::fibrogland(const phantomCalibration calib, const string filTar, d
 		    } else {
 		       totalThickness -= breastThickness;   // If glandular density is negative, remove pixel from consideration.
 		    }
-                  // myfile << breastThickness<< " " << tgTemp << "\n";
                }
            }
        }
-       //myfile.close();
        return tg;
 }
 
@@ -1415,3 +1268,5 @@ void breast::dailyCorrectionTVsB(const string filTar, const string kV, phantomCa
     this->b_a.find(lookFor)->second = tVsBCoeff.first;
     this->b_b.find(lookFor)->second = tVsBCoeff.second;
 }
+
+//#endif

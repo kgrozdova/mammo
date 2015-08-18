@@ -96,7 +96,7 @@ int main(int argc, char** argv){
     //
     // FINDING THE BREAST THICKNESS
     //
-    // Normalise the distance map to fit onto our graph.
+        // Normalise the distance map to fit onto our graph.
     //
     //	    This is dangerous... we're losing information here. 32 bit -> 8 bits = 16 million times less resolution...
     //		We desperately need to look at our classes etc. and make it saner...

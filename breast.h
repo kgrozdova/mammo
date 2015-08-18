@@ -106,29 +106,45 @@ class breast: public mammography, phantomCalibration{
 	uchar getAvNhood8(cv::Mat &mat, cv::Point &p, int nhood);
 	int getPixelType(int x, int y); // What type is a pixel?
 
-    void thicknessMapRedValBorder(const pair<double,double> coeff3, const int exposure, const vector<cv::Point> contactBorderShapeVal);
+    /* CREATE THICKNESS MAP*/
+    cv::Mat thicknessMap(const std::string bodyThickness, const std::pair<double,double> coeff3, const int exposure);
 
+    /* FUNCTIONS FOR THE OVEREXPOSURE CORRECTION*/
+    /* FIND OVEREXPOSED PIXELS*/
     vector<pair<int,int>> pixelOfInterestExposure();
+    /* CREATE DISTANCE MAP OF THE OVEREXPOSED PIXELS*/
     map<int,vector<pair<double,pair<int,int>>>> distMap(vector<pair<int,int>> pixelOfInterestExposureVec);
+    /* APPLY OVEREXPOSURE CORRECTION */
     void applyExposureCorrection(map<int,vector<pair<double,pair<int,int>>>> breastDistMap);
+    /* CREATE A MAP OF THE OVEREXPOSED PIXELS*/
     void exposureMap(const pair<double,double> coeff3, const int exposure, const vector<pair<int,int>> pixelOfInterestExposureVec);
 
-    string heightRowArray(vector<cv::Point> contactBorder2Vec, const string xOrY);
-    pair<cv::Point,float> straightLevel(const int row);
-    vector<cv::Point> contactBorder(const string filTar);
-    double averageDiffBorder(const vector<cv::Point> contactBorder, const vector<cv::Point> breastBorder);
-    vector<cv::Point> breastBorder();
-    vector<cv::Point> contactBorderFinal(const vector<cv::Point> contactBorderVal, const double averageDiffBorderVal);
-    vector<cv::Point> contactBorderFinalIt2(vector<cv::Point> contactBorderValFin, const double averageDiffBorderVal);
+    /* FOLLOWIONG FUNCTIONS FUNCTIONS ARE USED TO GET THE BORDERLINE, WHERE A BREAST LOSES THE CONTACT WITH THE COMPRESSION PADDLE */
+    /* FUNCTION TO GET THE BORDERLINE, WHERE A BREAST LOSES THE CONTACT WITH THE COMPRESSION PADDLE */
     vector<cv::Point> getContact(const string strKVP, const double exposure, const dailyCalibration dcalib);
+    pair<cv::Point,float> straightLevel(const int row);
+    /* FIRST ITERATION OF FINDING THE THE BORDERLINE, WHERE A BREAST LOSES THE CONTACT WITH THE COMPRESSION PADDLE  */
+    vector<cv::Point> contactBorder(const string filTar);
+    /* FIND BREAST BORDER */
+    vector<cv::Point> breastBorder();
+    /* CALCULATE AVERAGE DIFFERENCE BETWEEN THE BORDERLINE FIND IN THE FIRST ITERATION AND BREAST BORDER */
+    double averageDiffBorder(const vector<cv::Point> contactBorder, const vector<cv::Point> breastBorder);
+    /* SECOND ITERATION OF FINDING THE THE BORDERLINE, WHERE A BREAST LOSES THE CONTACT WITH THE COMPRESSION PADDLE */
+    vector<cv::Point> contactBorderFinal(const vector<cv::Point> contactBorderVal, const double averageDiffBorderVal);
+    /* FINDING FAT PIXELS IN THE FULLY COMPRESSED REGION OF A BREAST */
     vector<cv::Point> pointsFatForPlane(vector<cv::Point> breastFatPoints, const double averageDiffVal);
+    /* FIT A PLANE INTO FAT PIXELS */
     vector<float> fitPlane(vector<cv::Point> breastFatDiscarded, const string filTar);
-    void fatRow(const int row, const string filTar);
-    static double getPlaneAngle(const vector<float> plane);
+    /* CALCULATE AVERAGE DISTANCE BETWEEN FITTED PLANE AND STRAIGHT PLANE */
     double averageDistance(const vector<float> plane, vector<cv::Point> breastFatDiscarded, const string filTar);
+    /* FINAL ITERATION OF FINDING THE BORDERLINE, WHERE A BREAST LOSES THE CONTACT WITH THE COMPRESSION PADDLE */
     vector<cv::Point> contactBorder2(const vector<float> plane, vector<cv::Point> contactBorderFin, const double averageDiffVal, const string filTar);
+    /* CORRECTED BORDERLINE, WHERE A BREAST LOSES THE CONTACT WITH THE COMPRESSION PADDLE */
     vector<cv::Point> contactBorderCorrection(vector<cv::Point> contactBorder2Vec);
+    /* CALCULATE THE ANGLE OF COMPRESSION PADDLE TILT */
+    static double getPlaneAngle(const vector<float> plane);
 
+    /* CALCULATE FIBROGLANDULAR TISSUE AMOUNT*/
     double fibrogland(const phantomCalibration calib, const string filTar, double &totalThickness);
 
     void dailyCorrectionTVsB(const string filTar, const string kV, phantomCalibration calib);
